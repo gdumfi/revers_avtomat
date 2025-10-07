@@ -1,0 +1,4 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/akum1/Desktop/Учеба/4 курс/Реверс инжиниринг/revers_avtomat/media/videos/main/1080p60/partial_movie_files/Example/3529212410_4088400011_223132457.mp4'
+file 'file:C:/Users/akum1/Desktop/Учеба/4 курс/Реверс инжиниринг/revers_avtomat/media/videos/main/1080p60/partial_movie_files/Example/3040924799_1734327179_631829896.mp4'
+file 'file:C:/Users/akum1/Desktop/Учеба/4 курс/Реверс инжиниринг/revers_avtomat/media/videos/main/1080p60/partial_movie_files/Example/3040924799_1777376300_1666280314.mp4'
