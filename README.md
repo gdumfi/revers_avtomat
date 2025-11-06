@@ -34,8 +34,13 @@
      ```bash
      venv\Scripts\activate.bat
      ```
+     или
+   
+   ```bash
+     venv\Scripts\activate.ps1
+     ```
      
-3. **Установите Manim:**
+4. **Установите Manim:**
    ```bash
    pip install manim
    ```
