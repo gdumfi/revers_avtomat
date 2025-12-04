@@ -50,6 +50,52 @@ class FileToMemoryScene(Scene):
         self.play(LaggedStart(*[FadeIn(g) for g in file_box], lag_ratio=0.15))
 
         self.wait(0.5)
+        # ===============================
+        #    FILE ALIGNMENT GRID (LEFT)
+        # ===============================
+
+        # подпись
+        # fa_label = Text("File alignment", font_size=22).set_color(YELLOW)
+        # fa_label.next_to(container, UP, buff=0.2).move_to(LEFT * 1.4)
+        # self.play(FadeIn(fa_label), run_time=0.5)
+
+        # базовый адрес для примера
+        base_addr = 0x140001000
+
+        alignment_lines = VGroup()
+        addr_texts = VGroup()
+
+        for i, group in enumerate(file_box):
+            bottom_y = group[0].get_bottom()[1]
+
+            line = DashedLine(
+                start=[container.get_left()[0] - 0.05, bottom_y, 0],
+                end=[group[0].get_right()[0] + 0.5, bottom_y, 0],
+                dash_length=0.15,
+                color=YELLOW,
+                stroke_width=1
+            )
+            alignment_lines.add(line)
+
+            addr = Text(hex(base_addr + i)[2:], font_size=20, color=GREY_A)
+            addr.move_to([group[0].get_right()[0] + 0.7, bottom_y + 0.1, 0])
+            addr_texts.add(addr)
+
+        # Пунктиры поверх всего
+        self.bring_to_front(alignment_lines)
+
+        self.play(
+            LaggedStart(*[Create(l) for l in alignment_lines], lag_ratio=0.15),
+            LaggedStart(*[FadeIn(t) for t in addr_texts], lag_ratio=0.15),
+            run_time=1.2
+        )
+
+        # дополнительная подпись
+        # extra = Text("image base + base of code", font_size=20, color=GREY_A)
+        # extra.next_to(addr_texts[1], RIGHT, buff=0.3)
+        # self.play(FadeIn(extra), run_time=0.6)
+        # self.wait(2)
+        self.wait(0.5)
 
         # === Правая колонка: "Виртуальная память" ===
         mem_label = Text("Виртуальная память", font_size=28).move_to(RIGHT * 2.5 + UP * 2.5)
