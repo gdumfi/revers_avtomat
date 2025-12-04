@@ -9,24 +9,46 @@ class FileToMemoryScene(Scene):
 
         # === Данные секций ===
         sections = [
-            (".text", 2.0, BLUE),
-            (".rdata", 1.5, PURPLE),
-            (".data", 1, ORANGE),
-            (".rsrc", 1.3, GREEN),
-            (".reloc", 1, GRAY),
+            (".reloc", 0.5, GRAY),
+            (".rsrc", 0.4, GREEN),
+            (".data", 0.5, ORANGE),
+            (".rdata", 0.6, PURPLE),
+            (".text", 0.8, BLUE)
         ]
 
-        # === Левая колонка: "Файл на диске" ===
         file_label = Text("Файл на диске", font_size=28).move_to(LEFT * 3.5 + UP * 2.5)
+
+        # === Контейнер ===
+        container = Rectangle(
+            width=4,
+            height=4,
+            color=WHITE,
+            stroke_width=2,
+            fill_opacity=0
+        ).move_to(LEFT * 3.5)
+        zeros_in_conteiner = Text("0000000000000000000",font_size=24).move_to(container.get_left()+RIGHT * 2+ UP*1.8)
+        zeros_in_conteiner1 = Text("0000000000000000000", font_size=24).move_to(container.get_left() + RIGHT * 2 + DOWN * 1.8)
+        zeros_in_conteiner2 = Text("0000000000000000000", font_size=24).move_to(container.get_left() + RIGHT * 2 + DOWN * 1.45)
+        group_zeros  = VGroup(container,zeros_in_conteiner,zeros_in_conteiner1, zeros_in_conteiner2)
+        # === Секции ===
         file_box = VGroup()
-        y_offset = 2
-        for name, width, color in sections[::-1]:
-            rect = Rectangle(width=width, height=0.4, color=color, fill_opacity=0.5)
+
+        for name, height, color in sections[::-1]:
+            rect = Rectangle(width=4, height=height, color=color, fill_opacity=0.5)
             text = Text(name, font_size=24).move_to(rect.get_center())
-            group = VGroup(rect, text).move_to(LEFT * 3.5 + DOWN * y_offset)
-            y_offset -= 0.8
+            group = VGroup(rect, text)
             file_box.add(group)
-        self.play(FadeIn(file_label), LaggedStart(*[FadeIn(g) for g in file_box], lag_ratio=0.15))
+
+        # === Ровное выравнивание секций ===
+        file_box.arrange(DOWN, buff=0)
+
+        # Привязка к верхней части контейнера
+        file_box.move_to(container.get_top(), UP).shift(DOWN * (file_box[0].height / 2))
+
+        self.play(Create(group_zeros ))
+        self.play(FadeIn(file_label))
+        self.play(LaggedStart(*[FadeIn(g) for g in file_box], lag_ratio=0.15))
+
         self.wait(0.5)
 
         # === Правая колонка: "Виртуальная память" ===
