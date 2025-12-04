@@ -55,7 +55,7 @@ class FileToMemoryScene(Scene):
         # ===============================
 
         # подпись
-        # fa_label = Text("File alignment", font_size=22).set_color(YELLOW)
+        # fa_label = Text("File alignment", font_size=22, color= YELLOW)
         # fa_label.next_to(container, UP, buff=0.2).move_to(LEFT * 1.4)
         # self.play(FadeIn(fa_label), run_time=0.5)
 
@@ -64,13 +64,14 @@ class FileToMemoryScene(Scene):
 
         alignment_lines = VGroup()
         addr_texts = VGroup()
-
+        extra = Text("File alignment", font_size=20, color=YELLOW)
+        addr_texts.add(extra.move_to(UP* 2.3 + LEFT*0.7 ))
         for i, group in enumerate(file_box):
             bottom_y = group[0].get_bottom()[1]
 
             line = DashedLine(
                 start=[container.get_left()[0] - 0.05, bottom_y, 0],
-                end=[group[0].get_right()[0] + 0.5, bottom_y, 0],
+                end=[group[0].get_right()[0] + 1.5, bottom_y, 0],
                 dash_length=0.15,
                 color=YELLOW,
                 stroke_width=1
@@ -97,32 +98,54 @@ class FileToMemoryScene(Scene):
         # self.wait(2)
         self.wait(0.5)
 
+
+        #
+        #
+        #
+        #
         # === Правая колонка: "Виртуальная память" ===
-        mem_label = Text("Виртуальная память", font_size=28).move_to(RIGHT * 2.5 + UP * 2.5)
+        mem_label = Text("Виртуальная память", font_size=28).move_to(RIGHT * 3.5 + UP * 2.5)
+
+        # === Контейнер для памяти ===
+        mem_container = Rectangle(
+            width=4,
+            height=4,
+            color=WHITE,
+            stroke_width=2,
+            fill_opacity=0
+        ).move_to(RIGHT * 3.5)
+
+        # === Нули в контейнере памяти ===
+        mem_zero1 = Text("0000000000000000000", font_size=24).move_to(mem_container.get_left() + RIGHT * 2 + UP * 1.8)
+        mem_zero2 = Text("0000000000000000000", font_size=24).move_to(
+            mem_container.get_left() + RIGHT * 2 + DOWN * 1.45)
+        mem_zero3 = Text("0000000000000000000", font_size=24).move_to(mem_container.get_left() + RIGHT * 2 + DOWN * 1.8)
+
+        mem_zeros = VGroup(mem_container, mem_zero1, mem_zero2, mem_zero3)
+
+        # === Секции памяти (как слева, но отдельный VGroup) ===
         mem_box = VGroup()
-        y_offset = 2
-        for name, width, color in sections[::-1]:
-            rect = Rectangle(width=2.3, height=0.4, color=color, fill_opacity=0.5)
+
+        for name, height, color in sections[::-1]:
+            rect = Rectangle(width=4, height=height, color=color, fill_opacity=0.5)
             text = Text(name, font_size=24).move_to(rect.get_center())
-            group = VGroup(rect, text).move_to(RIGHT * 2.5 + DOWN * y_offset)
-            y_offset -= 0.8
+            group = VGroup(rect, text)
             mem_box.add(group)
 
+        # === Ровное выравнивание секций (как слева) ===
+        mem_box.arrange(DOWN, buff=0)
+        mem_box.move_to(mem_container.get_top(), UP).shift(DOWN * (mem_box[0].height / 2))
+
+        # === Отрисовка правой колонки ===
+        self.play(Create(mem_zeros))
         self.play(FadeIn(mem_label))
         self.wait(0.5)
 
-        # === Перенос секций (слева → направо) ===
+        # === Перенос секций (как раньше) ===
         for i in range(len(sections)):
             self.play(TransformFromCopy(file_box[i], mem_box[i]), run_time=0.8)
-        self.wait(0.5)
 
-        # === Подписи FileAlignment / SectionAlignment ===
-        file_align = Text("FileAlignment = 0x200", font_size=20, color=YELLOW)
-        sect_align = Text("SectionAlignment = 0x1000", font_size=20, color=YELLOW)
-        file_align.next_to(file_label, DOWN, buff=0.2)
-        sect_align.next_to(mem_label, DOWN, buff=0.2)
-        self.play(FadeIn(file_align), FadeIn(sect_align))
-        self.wait(1)
+        self.wait(0.5)
 
         # =========================================================
         # === ЭТАП 1 ===
