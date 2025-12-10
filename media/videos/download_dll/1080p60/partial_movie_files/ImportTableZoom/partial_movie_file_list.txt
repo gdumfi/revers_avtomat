@@ -1,0 +1,11 @@
+# This file is used internally by FFMPEG.
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3529212410_472319115_223132457.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_2043799837_1134667221.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_3201849554_2904246696.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_621438172_518410715.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_3201849554_1156751431.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_2134939687_4014804064.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_776878048_2463036408.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_1466455882_1433779010.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_276220482_3659948242.mp4'
+file 'file:C:/Users/Sergey/Desktop/УЧЁБА/4 курс/реверс/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/ImportTableZoom/3040924799_2704686740_1536210162.mp4'
