@@ -60,19 +60,18 @@ class FileToMemoryScene(Scene):
             Text("0x1600", font_size=16),
         )
 
-        zeros_in_container[0].move_to(container.get_left() + RIGHT * 1.4 + UP * 1.5) #над текстом
-        zeros_in_container[1].move_to(container.get_left() + RIGHT * 1.4 + UP * 0.3) #над датой
-        zeros_in_container[2].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 0.75)# над рдатой
-        zeros_in_container[3].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 1.5)#подвал
-        zeros_in_container[4].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 1.75)#подвал
-        zeros_in_container[5].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 2.0)# подвал
-        zeros_in_container[6].move_to(container.get_right() + LEFT * 0.5 + UP * 0.57)# нули текста
-        zeros_in_container[7].move_to(container.get_right() + LEFT * 0.7 + DOWN * 0.5)# нули даты
-        zeros_in_container[8].move_to(container.get_right() + LEFT * 0.18 + DOWN * 1.3)# нули рдаты
-        zeros_in_container[9].move_to(container.get_left()+ LEFT * 0.5 + UP * 1.3)  # адрес текста
-        zeros_in_container[10].move_to(container.get_left()+ LEFT * 0.5)  # адрес даты
-        zeros_in_container[11].move_to(container.get_left()+ LEFT * 0.5 + DOWN)  # адрес рдаты
-
+        zeros_in_container[0].move_to(container.get_left() + RIGHT * 1.4 + UP * 1.5)  # над текстом
+        zeros_in_container[1].move_to(container.get_left() + RIGHT * 1.4 + UP * 0.3)  # над датой
+        zeros_in_container[2].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 0.75)  # над рдатой
+        zeros_in_container[3].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 1.5)  # подвал
+        zeros_in_container[4].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 1.75)  # подвал
+        zeros_in_container[5].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 2.0)  # подвал
+        zeros_in_container[6].move_to(container.get_right() + LEFT * 0.5 + UP * 0.57)  # нули текста
+        zeros_in_container[7].move_to(container.get_right() + LEFT * 0.7 + DOWN * 0.5)  # нули даты
+        zeros_in_container[8].move_to(container.get_right() + LEFT * 0.18 + DOWN * 1.3)  # нули рдаты
+        zeros_in_container[9].move_to(container.get_left() + LEFT * 0.5 + UP * 1.3)  # адрес текста
+        zeros_in_container[10].move_to(container.get_left() + LEFT * 0.5)  # адрес даты
+        zeros_in_container[11].move_to(container.get_left() + LEFT * 0.5 + DOWN)  # адрес рдаты
         group_zeros = VGroup(container, zeros_in_container)
 
         # ======================================================
@@ -129,8 +128,8 @@ class FileToMemoryScene(Scene):
         ]
 
         sec_rdata = polyline(rdata_points, ".text", ORANGE)
-        sec_data  = polyline(data_points,  ".data",  PURPLE)
-        sec_text  = polyline(text_points,  ".rdata",  GREEN)
+        sec_data = polyline(data_points, ".data", PURPLE)
+        sec_text = polyline(text_points, ".rdata", GREEN)
 
         file_box = VGroup(sec_rdata, sec_data, sec_text)
         file_box.arrange(DOWN, buff=0.25)
@@ -186,8 +185,8 @@ class FileToMemoryScene(Scene):
         alignment_lines = VGroup()
         addr_texts = VGroup()
 
-        extra = Text("      File\n alignment", font_size=14, color=YELLOW)
-        extra.move_to(UP * 0.9 + LEFT * 0.9).rotate(3.1415/2)
+        extra = Text("      File\n alignment \n    0x200", font_size=14, color=YELLOW)
+        extra.move_to(UP * 0.9 + LEFT * 0.9).rotate(3.1415 / 2)
         addr_texts.add(extra)
 
         for i, group in enumerate(file_box):
@@ -221,7 +220,6 @@ class FileToMemoryScene(Scene):
             tip_length=0.15
         )
 
-
         self.bring_to_front(alignment_lines)
         self.play(
             LaggedStart(*[Create(l) for l in alignment_lines], lag_ratio=0.15),
@@ -229,4 +227,106 @@ class FileToMemoryScene(Scene):
             run_time=1.2
         )
         self.add(arrow)
+        self.wait(1)
+
+        # ======================================================
+        # ПРАВЫЙ БЛОК — КОПИЯ СЕКЦИЙ (ПРАВИЛЬНЫЙ ПОРЯДОК)
+        # ======================================================
+
+        mem_container = Rectangle(
+            width=2.8,
+            height=4.2,
+            color=WHITE,
+            stroke_width=2,
+            fill_opacity=0
+        ).move_to(RIGHT * 3.5)
+
+        mem_label = Text(
+            "Виртуальная память",
+            font_size=28
+        ).move_to(RIGHT * 3.5 + UP * 2.5)
+
+        self.play(
+            Create(mem_container),
+            FadeIn(mem_label),
+            run_time=0.8
+        )
+
+        mem_sec_rdata = sec_text.copy()
+        mem_sec_data = sec_data.copy()
+        mem_sec_text = sec_rdata.copy()
+
+        mem_file_box = VGroup(
+            mem_sec_text,  # .text
+            mem_sec_data,  # .data
+            mem_sec_rdata  # .rdata
+        )
+        mem_file_box.move_to(mem_container)
+        self.play(
+            TransformFromCopy(sec_text, mem_sec_text),
+            TransformFromCopy(sec_data, mem_sec_data),
+            TransformFromCopy(sec_rdata, mem_sec_rdata),
+            run_time=1.5
+        )
+
+        self.add(mem_file_box)
+        self.wait(1)
+        # ======================================================
+        # SECTION ALIGNMENT (ПРАВЫЙ БЛОК — ТОЧНО КАК СЛЕВА)
+        # ======================================================
+
+        section_alignment_lines = VGroup()
+        section_addr_texts = VGroup()
+
+        section_extra = Text(
+            "    Section\n alignment \n  0x1000",
+            font_size=14,
+            color=YELLOW
+        )
+        section_extra.rotate(PI / 2)
+        section_extra.move_to(UP * 0.9 + RIGHT * 6)
+        section_addr_texts.add(section_extra)
+
+        for group in mem_file_box:
+            bottom_y = group.get_bottom()[1]
+            top_y = group.get_top()[1]
+
+            line_bottom = DashedLine(
+                start=[mem_container.get_left()[0] - 0.05, bottom_y, 0],
+                end=[group.get_right()[0] + 1.5, bottom_y, 0],
+                dash_length=0.15,
+                color=YELLOW,
+                stroke_width=1
+            )
+
+            line_top = DashedLine(
+                start=[mem_container.get_left()[0] - 0.05, top_y, 0],
+                end=[group.get_right()[0] + 1.5, top_y, 0],
+                dash_length=0.15,
+                color=YELLOW,
+                stroke_width=1
+            )
+
+            section_alignment_lines.add(line_bottom)
+            section_alignment_lines.add(line_top)
+
+        # ======================================================
+        # Стрелка для section alignment (копия file alignment)
+        # ======================================================
+
+        section_arrow = DoubleArrow(
+            start=[mem_container.get_right()[0] + 1.5, 0.2, 0],
+            end=[mem_container.get_right()[0] +1.5, 1.7, 0],
+            color=YELLOW,
+            stroke_width=2,
+            tip_length=0.15
+        )
+
+        self.bring_to_front(section_alignment_lines)
+        self.play(
+            LaggedStart(*[Create(l) for l in section_alignment_lines], lag_ratio=0.15),
+            LaggedStart(*[FadeIn(t) for t in section_addr_texts], lag_ratio=0.15),
+            run_time=1.2
+        )
+        self.add(section_arrow)
         self.wait(1)
