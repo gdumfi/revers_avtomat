@@ -8,17 +8,17 @@ class FileToMemoryScene(Scene):
         # ======================================================
         self.camera.background_color = GREY_E
 
-        grid = NumberPlane(
-            x_range=[-8, 8, 0.5],
-            y_range=[-4.5, 4.5, 0.5],
-            background_line_style={
-                "stroke_color": GREY_C,
-                "stroke_width": 1,
-                "stroke_opacity": 0.4,
-            }
-        )
-
-        self.add(grid)
+        # grid = NumberPlane(
+        #     x_range=[-8, 8, 0.5],
+        #     y_range=[-4.5, 4.5, 0.5],
+        #     background_line_style={
+        #         "stroke_color": GREY_C,
+        #         "stroke_width": 1,
+        #         "stroke_opacity": 0.4,
+        #      }
+        #  )
+        #
+        # self.add(grid)
         # ======================================================
         # Заголовок сцены
         # ======================================================
@@ -69,7 +69,7 @@ class FileToMemoryScene(Scene):
         zeros_in_container[6].move_to(container.get_right() + LEFT * 0.5 + UP * 0.57)# нули текста
         zeros_in_container[7].move_to(container.get_right() + LEFT * 0.7 + DOWN * 0.5)# нули даты
         zeros_in_container[8].move_to(container.get_right() + LEFT * 0.18 + DOWN * 1.3)# нули рдаты
-        zeros_in_container[9].move_to(container.get_left()+ LEFT * 0.5 + UP * 1.4)  # адрес текста
+        zeros_in_container[9].move_to(container.get_left()+ LEFT * 0.5 + UP * 1.3)  # адрес текста
         zeros_in_container[10].move_to(container.get_left()+ LEFT * 0.5)  # адрес даты
         zeros_in_container[11].move_to(container.get_left()+ LEFT * 0.5 + DOWN)  # адрес рдаты
 
@@ -182,41 +182,51 @@ class FileToMemoryScene(Scene):
         # ======================================================
         # FILE ALIGNMENT (пунктиры и адреса)
         # ======================================================
-        base_addr = 0x140001000
 
         alignment_lines = VGroup()
         addr_texts = VGroup()
 
-        extra = Text("File alignment", font_size=20, color=YELLOW)
-        extra.move_to(UP * 2.3 + LEFT * 0.7)
+        extra = Text("      File\n alignment", font_size=14, color=YELLOW)
+        extra.move_to(UP * 0.9 + LEFT * 0.9).rotate(3.1415/2)
         addr_texts.add(extra)
 
         for i, group in enumerate(file_box):
             bottom_y = group.get_bottom()[1]
-
-            line = DashedLine(
+            top_y = group.get_top()[1]
+            line_bottom = DashedLine(
                 start=[container.get_left()[0] - 0.05, bottom_y, 0],
                 end=[group.get_right()[0] + 1.5, bottom_y, 0],
                 dash_length=0.15,
                 color=YELLOW,
                 stroke_width=1
             )
-            alignment_lines.add(line)
 
-            addr = Text(
-                hex(base_addr + i)[2:],
-                font_size=20,
-                color=GREY_A
+            line_top = DashedLine(
+                start=[container.get_left()[0] - 0.05, top_y, 0],
+                end=[group.get_right()[0] + 1.5, top_y, 0],
+                dash_length=0.15,
+                color=YELLOW,
+                stroke_width=1
             )
-            addr.move_to([group.get_right()[0] + 0.7, bottom_y + 0.1, 0])
-            addr_texts.add(addr)
+            alignment_lines.add(line_bottom)
+            alignment_lines.add(line_top)
+        # ======================================================
+        # Стрелка желтая в file aligment
+        # ======================================================
+        arrow = DoubleArrow(
+            start=[-0.5, 0.2, 0],
+            end=[-0.5, 1.7, 0],
+            color=YELLOW,
+            stroke_width=2,
+            tip_length=0.15
+        )
+
 
         self.bring_to_front(alignment_lines)
-
         self.play(
             LaggedStart(*[Create(l) for l in alignment_lines], lag_ratio=0.15),
             LaggedStart(*[FadeIn(t) for t in addr_texts], lag_ratio=0.15),
             run_time=1.2
         )
-
+        self.add(arrow)
         self.wait(1)
