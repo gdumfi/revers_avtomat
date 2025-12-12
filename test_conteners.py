@@ -55,17 +55,23 @@ class FileToMemoryScene(Scene):
             Text("00 00 00", font_size=16),
             Text("00 00 00 00", font_size=16),
             Text("00", font_size=16),
+            Text("0x1000", font_size=16),
+            Text("0x1400", font_size=16),
+            Text("0x1600", font_size=16),
         )
 
-        zeros_in_container[0].move_to(container.get_left() + RIGHT * 1.4 + UP * 1.5)
-        zeros_in_container[1].move_to(container.get_left() + RIGHT * 1.4 + UP * 0.3)
-        zeros_in_container[2].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 0.7)
-        zeros_in_container[3].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 1.5)
-        zeros_in_container[4].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 1.75)
-        zeros_in_container[5].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 2.0)
-        zeros_in_container[6].move_to(container.get_right() + LEFT * 0.5 + UP * 0.57)
-        zeros_in_container[7].move_to(container.get_right() + LEFT * 0.7 + DOWN * 0.5)
-        zeros_in_container[8].move_to(container.get_right() + LEFT * 0.2 + DOWN * 1.28)
+        zeros_in_container[0].move_to(container.get_left() + RIGHT * 1.4 + UP * 1.5) #над текстом
+        zeros_in_container[1].move_to(container.get_left() + RIGHT * 1.4 + UP * 0.3) #над датой
+        zeros_in_container[2].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 0.75)# над рдатой
+        zeros_in_container[3].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 1.5)#подвал
+        zeros_in_container[4].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 1.75)#подвал
+        zeros_in_container[5].move_to(container.get_left() + RIGHT * 1.4 + DOWN * 2.0)# подвал
+        zeros_in_container[6].move_to(container.get_right() + LEFT * 0.5 + UP * 0.57)# нули текста
+        zeros_in_container[7].move_to(container.get_right() + LEFT * 0.7 + DOWN * 0.5)# нули даты
+        zeros_in_container[8].move_to(container.get_right() + LEFT * 0.18 + DOWN * 1.3)# нули рдаты
+        zeros_in_container[9].move_to(container.get_left()+ LEFT * 0.5 + UP * 1.4)  # адрес текста
+        zeros_in_container[10].move_to(container.get_left()+ LEFT * 0.5)  # адрес даты
+        zeros_in_container[11].move_to(container.get_left()+ LEFT * 0.5 + DOWN)  # адрес рдаты
 
         group_zeros = VGroup(container, zeros_in_container)
 
