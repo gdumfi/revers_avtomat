@@ -21,6 +21,18 @@ class VirtualMemoryScheme(Scene):
                 dash_length=0.08,
                 color=LINE_COLOR
             )
+        
+        def dashed_from_left(block):
+            start = block.get_corner(UL)
+            end = start + LEFT * 1.5
+            return DashedLine(
+                start,
+                end,
+                dash_length=0.08,
+                color=LINE_COLOR
+            )
+        
+        
 
         def dashed_from_bottom(block):
             start = block.get_corner(DR)
@@ -100,7 +112,7 @@ class VirtualMemoryScheme(Scene):
             height=0.5,
             fill_opacity=0,
             stroke_color=LINE_COLOR,
-            stroke_width=1
+            stroke_width=1,
         ).move_to([0, top - 1, 0])
 
         header_text = Text(
@@ -125,7 +137,7 @@ class VirtualMemoryScheme(Scene):
             for _ in range(3)
         ]).arrange(DOWN, buff=0)
 
-        stripes.next_to(header_block, DOWN, buff=0)
+        stripes.next_to(header_block, DOWN, buff=0.2)
 
         # =========================
         # 5. Пунктирные линии
@@ -215,8 +227,21 @@ class VirtualMemoryScheme(Scene):
 
         right_text.next_to(header_block.get_corner(UR), RIGHT, buff=1.0)
 
+        
+
         # =========================
-        # 8. Финальная сборка
+        # 8. Подпись слева
+        # =========================
+        left_text = VGroup(
+            Text("0x140001000", font_size=16, color=TEXT_COLOR),
+            Text("Image base +", font_size=16, color=TEXT_COLOR),
+            Text("Base of code", font_size=16, color=TEXT_COLOR)
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
+        left_text.next_to(stripes.get_corner(UL) - 0.2, LEFT, buff=1.0)
+        left_text.shift(RIGHT)
+        left_dashed_line = dashed_from_left(stripes)
+        # =========================
+        # 9. Финальная сборка
         # =========================
         main_container = VGroup(
             outer_shape,
@@ -228,7 +253,9 @@ class VirtualMemoryScheme(Scene):
             arrows,
             align_labels,
             # left_annotations,
-            right_text
+            right_text,
+            left_text,
+            left_dashed_line
         )
 
         main_container.move_to(ORIGIN)
