@@ -260,3 +260,4 @@ class VirtualMemoryScheme(Scene):
 
         main_container.move_to(ORIGIN)
         self.add(main_container)
+        
