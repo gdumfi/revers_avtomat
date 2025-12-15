@@ -14,7 +14,7 @@ class VirtualMemoryScheme(Scene):
 
         def dashed_from(block):
             start = block.get_corner(UR)
-            end = start + RIGHT * 1.5
+            end = start + RIGHT * 1
             return DashedLine(
                 start,
                 end,
@@ -24,7 +24,7 @@ class VirtualMemoryScheme(Scene):
         
         def dashed_from_left(block):
             start = block.get_corner(UL)
-            end = start + LEFT * 1.5
+            end = start + LEFT * 1
             return DashedLine(
                 start,
                 end,
@@ -36,7 +36,7 @@ class VirtualMemoryScheme(Scene):
 
         def dashed_from_bottom(block):
             start = block.get_corner(DR)
-            end = start + RIGHT * 1.5
+            end = start + RIGHT * 1
             return DashedLine(
                 start,
                 end,
@@ -100,7 +100,7 @@ class VirtualMemoryScheme(Scene):
         # =========================
         title = Text(
             "Виртуальная память",
-            font_size=32,
+            font_size=28,
             color=TEXT_COLOR
         ).next_to(top_wave, UP, buff=0.3)
 
@@ -117,12 +117,12 @@ class VirtualMemoryScheme(Scene):
 
         header_text = Text(
             "заголовок",
-            font_size=20,
+            font_size=16,
             color=TEXT_COLOR
         ).move_to(header_block.get_center())
 
         # =========================
-        # 4. Три одинаковые полосы
+        # 4. Три блока
         # =========================
         stripe_height = 1.3
 
@@ -138,7 +138,21 @@ class VirtualMemoryScheme(Scene):
         ]).arrange(DOWN, buff=0)
 
         stripes.next_to(header_block, DOWN, buff=0.2)
+        text_labels = [
+            Text(".text", font_size=14, color=YELLOW_B),
+            Text(".data", font_size=14, color=YELLOW_B),
+            Text(".rdata", font_size=14, color=YELLOW_B)
+        ]
+        for stripe, label in zip(stripes, text_labels):
+            # Размещаем текст в центре прямоугольника
+            label.move_to(stripe.get_center())
+            # Или можно прижать к левому краю с отступом:
+            # label.next_to(stripe.get_left(), RIGHT, buff=0.2)
+            # label.align_to(stripe, UP).shift(DOWN * 0.2)
 
+        # Добавляем текст в группу с прямоугольниками
+        for stripe, label in zip(stripes, text_labels):
+            stripe.add(label)
         # =========================
         # 5. Пунктирные линии
         # =========================
@@ -152,15 +166,17 @@ class VirtualMemoryScheme(Scene):
         # Добавление вертикальных двунаправленных стрелочек
         # =========================
         arrows = VGroup()
+        arrow_offset = 0.6
         for i in range(1, 4):
-            upper_end = dashed_lines[i].get_end()
-            lower_end = dashed_lines[i + 1].get_end()
+            upper_end = dashed_lines[i].get_end() + LEFT * arrow_offset
+            lower_end = dashed_lines[i + 1].get_end() + LEFT * arrow_offset
             arrow = DoubleArrow(
                 upper_end,
                 lower_end,
                 buff=0,
                 color=LINE_COLOR,
-                tip_length=0.2  # ← добавить это
+                tip_length=0.2,  # ← добавить это
+                stroke_width=2
             )
             arrows.add(arrow)
 
@@ -168,9 +184,9 @@ class VirtualMemoryScheme(Scene):
         for arrow in arrows:
             label = Text(
                 "0x1000",
-                font_size=18,
+                font_size=16,
                 color=TEXT_COLOR
-            ).next_to(arrow, RIGHT, buff=0.2)
+            ).next_to(arrow, RIGHT*0.5, buff=0.2)
             align_labels.add(label)
         # # =========================
         # # 6. Подписи слева
@@ -221,11 +237,11 @@ class VirtualMemoryScheme(Scene):
         # 7. Подпись справа
         # =========================
         right_text = VGroup(
-            Text("Image base", font_size=18, color=TEXT_COLOR),
-            Text("0x140000000", font_size=18, color=TEXT_COLOR)
+            Text("Image base", font_size=16, color=TEXT_COLOR),
+            Text("0x140000000", font_size=16, color=TEXT_COLOR)
         ).arrange(DOWN, aligned_edge=LEFT)
 
-        right_text.next_to(header_block.get_corner(UR), RIGHT, buff=1.0)
+        right_text.next_to(header_block.get_corner(UR), RIGHT*0.3, buff=1.0)
 
         
 
@@ -233,11 +249,11 @@ class VirtualMemoryScheme(Scene):
         # 8. Подпись слева
         # =========================
         left_text = VGroup(
-            Text("0x140001000", font_size=16, color=TEXT_COLOR),
-            Text("Image base +", font_size=16, color=TEXT_COLOR),
-            Text("Base of code", font_size=16, color=TEXT_COLOR)
+            Text("0x140001000", font_size=14, color=TEXT_COLOR),
+            Text("Image base +", font_size=14, color=TEXT_COLOR),
+            Text("Base of code", font_size=14, color=TEXT_COLOR)
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
-        left_text.next_to(stripes.get_corner(UL) - 0.2, LEFT, buff=1.0)
+        left_text.next_to(stripes.get_corner(UL) - 0.15, LEFT, buff=1.0)
         left_text.shift(RIGHT)
         left_dashed_line = dashed_from_left(stripes)
         # =========================
@@ -261,5 +277,144 @@ class VirtualMemoryScheme(Scene):
         main_container.move_to(ORIGIN)
         main_container.to_edge(RIGHT, buff=1.0)  # ← начальная позиция справа (~40% экрана)
         self.add(main_container)
-        self.play(main_container.animate.shift(LEFT * 4), run_time=2)  # ← плавный сдвиг в левую половину; подберите дистанцию
+    # Этап 1 - убираем ненужные элементы
+        self.play(
+            FadeOut(left_text),
+            FadeOut(align_labels),
+            FadeOut(arrows),
+            FadeOut(dashed_lines),
+            FadeOut(left_dashed_line),
+            FadeOut(right_text),
+            run_time=1
+        )
+        
+        main_container.remove(left_text, align_labels, arrows, dashed_lines, left_dashed_line, right_text)
+        self.wait(0.3)
+        # Этап 2 - сдвигаем схему
+        self.play(
+            main_container.animate.shift(LEFT * 7.4),
+            run_time=2
+        )
+        self.wait(0.3)
+        # self.play(main_container.animate.shift(LEFT * 6), run_time=2)  # ← плавный сдвиг в левую половину; подберите дистанцию
+        # self.wait(1)
+
+        # =========================
+        # Этап 3 - Фокусируем внимание на третьем блоке
+        # =========================
+        
+        # 3.1 Мигаем границами нижнего прямоугольника два раза
+        for _ in range(2):
+            # Меняем цвет границ на желтый
+            self.play(
+                stripes[2].animate.set_stroke(color=RED_A, width=6),
+                run_time=0.2
+            )
+            self.wait(0.2)
+            # Возвращаем исходный цвет
+            self.play(
+                stripes[2].animate.set_stroke(color=LINE_COLOR, width=1),
+                run_time=0.2
+            )
+            self.wait(0.2)
+        
+        self.wait(0.5)
+        
+        # 3.2 Удаляем верхние два прямоугольника и заголовочный блок
+        elements_to_remove = VGroup(stripes[0], stripes[1], header_block, header_text)
+        self.play(
+            FadeOut(elements_to_remove),
+            run_time=1.5
+        )
+        
+        # Удаляем из main_container
+        main_container.remove(stripes[0], stripes[1], header_block, header_text)
+        stripes[2].remove(text_labels[2])
+        
+        # 3.3 Растягиваем оставшийся нижний блок на всю высоту
+        # Сохраняем текущую позицию нижнего края блока
+        current_bottom = stripes[2].get_bottom()
+        
+        # Вычисляем новую высоту (от текущего верха до верха outer_shape)
+        new_top = outer_shape.get_top()[1] - 0.3  # немного отступа от верха
+        new_bottom = outer_shape.get_bottom()[1] + 0.3  # немного отступа от низа
+        
+        # Вычисляем центр нового положения
+        new_center_y = (new_top + new_bottom) / 2
+        new_height = new_top - new_bottom
+
+        # self.play(
+        #     FadeOut(text_labels[2]),
+        #     run_time=0.5
+        # )
+        # stripes[2].remove(text_labels[2])
+        
+        # Создаем анимацию растягивания
+        self.play(
+            stripes[2].animate.move_to([stripes[2].get_center()[0], new_center_y, 0])
+                            .stretch_to_fit_height(new_height),
+            run_time=2
+        )
+        
+        # # 3.4 Добавляем подпись к растянутому блоку (опционально)
+        # expanded_label = Text(
+        #     "Расширенный блок",
+        #     font_size=18,
+        #     color=TEXT_COLOR
+        # ).next_to(stripe_bottom, UP, buff=0.2)
+        
+        # self.play(
+        #     Write(expanded_label),
+        #     run_time=1
+        # )
+        
+        self.wait(0.5)
+
+
+        # Этап 4 - показываем таблицу импорта
+        import_table = Rectangle(
+            width=container_width,
+            height=stripes[2].height * 0.9,  # занимает 80% высоты
+            fill_opacity=0,
+            stroke_color=LINE_COLOR,
+            stroke_width=2  # чуть толще для выделения
+        )
+
+        # Текстовые метки
+        text1 = Text(
+            " 46 12 1e 2b 67 ..", 
+            font_size=14, 
+            color=YELLOW_B
+        )
+
+        text2 = Text(
+            " f3 d2 4f 2c a8 ..", 
+            font_size=14, 
+            color=YELLOW_B,
+        )
+
+        # Создаем контейнер и правильно располагаем элементы
+        block_for_IT = VGroup(
+            text1,
+            import_table,
+            text2
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0)  # маленький отступ
+        text1.shift(UP*0.05, RIGHT*0.05)
+        text2.shift(DOWN*0.05, RIGHT*0.05)
+
+
+        # Позиционируем внутри stripes[2]
+        block_for_IT.move_to(stripes[2].get_center())
+
+        # Добавляем на сцену (не в stripes[2], чтобы не наследовать трансформации)
+        self.add(block_for_IT)
+
+        # Анимация появления
+        self.play(
+            Create(import_table),
+            Write(text1),
+            Write(text2),
+            run_time=1.5
+        )
+
         self.wait(1)
