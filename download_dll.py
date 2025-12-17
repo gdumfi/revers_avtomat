@@ -43,6 +43,35 @@ class VirtualMemoryScheme(Scene):
                 dash_length=0.08,
                 color=LINE_COLOR
             )
+        
+
+        def create_vertical_dashed_lines(start_pos, interval, count=5, length=1):
+            """
+            Создает вертикальные пунктирные линии одна под другой через равные промежутки
+
+            Parameters:
+            start_pos: начальная позиция (np.array или list) для первой линии
+            interval: расстояние между линиями по вертикали (float)
+            count: количество линий (int)
+            length: длина линий по горизонтали (float)
+            """
+            lines = VGroup()
+
+            for i in range(count):
+                # Вычисляем позицию для текущей линии
+                line_start = start_pos + np.array([0, -i * interval, 0])
+                line_end = line_start + np.array([length, 0, 0])
+
+                # Создаем пунктирную линию
+                line = DashedLine(
+                    start=line_start,
+                    end=line_end,
+                    dash_length=0.08,
+                    color=LINE_COLOR
+                )
+                lines.add(line)
+
+            return lines
         # =========================
         # 1. Центральный контейнер
         # =========================
@@ -122,52 +151,51 @@ class VirtualMemoryScheme(Scene):
         ).move_to(header_block.get_center())
 
         # =========================
-        # 4. Три блока
+        # 4. Три блока РАЗНОЙ высоты
         # =========================
-        stripe_height = 1.3
-
+        # Разные высоты для каждого блока
+        stripe_heights = [0.6, 1.0, 1.5]  # разная высота для .text, .data, .rdata
+        colors_my = ["RED_A", "BLUE_A", "GREEN_A"]
+        
         stripes = VGroup(*[
             Rectangle(
                 width=container_width,
-                height=stripe_height,
-                fill_opacity=0,
+                height=stripe_heights[i],
+                fill_opacity=0.2,
                 stroke_color=LINE_COLOR,
-                stroke_width=1
+                stroke_width=1,
+                fill_color=colors_my[i]
             )
-            for _ in range(3)
-        ]).arrange(DOWN, buff=0)
-
+            for i in range(3)
+        ])
+        
+        # Располагаем блоки вертикально под header_block
+        stripes.arrange(DOWN, buff=0, aligned_edge=UP)
         stripes.next_to(header_block, DOWN, buff=0.2)
+        
         text_labels = [
             Text(".text", font_size=14, color=YELLOW_B),
             Text(".data", font_size=14, color=YELLOW_B),
             Text(".rdata", font_size=14, color=YELLOW_B)
         ]
+        
         for stripe, label in zip(stripes, text_labels):
-            # Размещаем текст в центре прямоугольника
             label.move_to(stripe.get_center())
-            # Или можно прижать к левому краю с отступом:
-            # label.next_to(stripe.get_left(), RIGHT, buff=0.2)
-            # label.align_to(stripe, UP).shift(DOWN * 0.2)
-
-        # Добавляем текст в группу с прямоугольниками
-        for stripe, label in zip(stripes, text_labels):
             stripe.add(label)
         # =========================
         # 5. Пунктирные линии
         # =========================
-        dashed_lines = VGroup(
-            dashed_from(header_block),
-            *[dashed_from(stripe) for stripe in stripes],
-            dashed_from_bottom(stripes[-1])   # ← новая линия
-        )
-
+        dashed_lines = create_vertical_dashed_lines(stripes[0].get_corner(UR) + LEFT*0.2, 0.7 , 5, 1)   # ← новая линия
+        
+        stripes[0].next_to(dashed_lines[0].get_start() + LEFT * 1.8, DOWN, buff=0)
+        stripes[1].next_to(dashed_lines[1].get_start() + LEFT * 1.8, DOWN, buff=0)
+        stripes[2].next_to(dashed_lines[3].get_start() + LEFT * 1.8, DOWN, buff=0)
         # =========================
         # Добавление вертикальных двунаправленных стрелочек
         # =========================
         arrows = VGroup()
         arrow_offset = 0.6
-        for i in range(1, 4):
+        for i in range(0, 4):
             upper_end = dashed_lines[i].get_end() + LEFT * arrow_offset
             lower_end = dashed_lines[i + 1].get_end() + LEFT * arrow_offset
             arrow = DoubleArrow(
@@ -242,6 +270,7 @@ class VirtualMemoryScheme(Scene):
         ).arrange(DOWN, aligned_edge=LEFT)
 
         right_text.next_to(header_block.get_corner(UR), RIGHT*0.3, buff=1.0)
+        line_header = dashed_from(header_block)
 
         
 
@@ -270,6 +299,7 @@ class VirtualMemoryScheme(Scene):
             align_labels,
             # left_annotations,
             right_text,
+            line_header,
             left_text,
             left_dashed_line
         )
@@ -285,10 +315,11 @@ class VirtualMemoryScheme(Scene):
             FadeOut(dashed_lines),
             FadeOut(left_dashed_line),
             FadeOut(right_text),
+            FadeOut(line_header),
             run_time=1
         )
         
-        main_container.remove(left_text, align_labels, arrows, dashed_lines, left_dashed_line, right_text)
+        main_container.remove(left_text, align_labels, arrows, dashed_lines, left_dashed_line, right_text, line_header)
         self.wait(0.3)
         # Этап 2 - сдвигаем схему
         self.play(
@@ -369,52 +400,17 @@ class VirtualMemoryScheme(Scene):
         # )
         
         self.wait(0.5)
-
-
-        # Этап 4 - показываем таблицу импорта
-        import_table = Rectangle(
-            width=container_width,
-            height=stripes[2].height * 0.9,  # занимает 80% высоты
-            fill_opacity=0,
-            stroke_color=LINE_COLOR,
-            stroke_width=2  # чуть толще для выделения
+        expanded_label = Text(
+            ".rdata",
+            font_size=16,
+            color=TEXT_COLOR
         )
-
-        # Текстовые метки
-        text1 = Text(
-            " 46 12 1e 2b 67 ..", 
-            font_size=14, 
-            color=YELLOW_B
-        )
-
-        text2 = Text(
-            " f3 d2 4f 2c a8 ..", 
-            font_size=14, 
-            color=YELLOW_B,
-        )
-
-        # Создаем контейнер и правильно располагаем элементы
-        block_for_IT = VGroup(
-            text1,
-            import_table,
-            text2
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0)  # маленький отступ
-        text1.shift(UP*0.05, RIGHT*0.05)
-        text2.shift(DOWN*0.05, RIGHT*0.05)
-
-
-        # Позиционируем внутри stripes[2]
-        block_for_IT.move_to(stripes[2].get_center())
-
-        # Добавляем на сцену (не в stripes[2], чтобы не наследовать трансформации)
-        self.add(block_for_IT)
-
-        # Анимация появления
+        expanded_label.align_to(stripes[2].get_corner(UL), LEFT)  # выравнивание по левому краю
+        expanded_label.align_to(stripes[2].get_top(), UP)        # выравнивание по верхнему краю
+        expanded_label.shift(DOWN*0.02, RIGHT*0.05)  # маленький вертикальный отступ, если нужен
+        
         self.play(
-            Create(import_table),
-            Write(text1),
-            Write(text2),
-            run_time=1.5
+            Write(expanded_label),
+            run_time=1
         )
-
         self.wait(1)
