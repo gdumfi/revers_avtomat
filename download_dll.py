@@ -76,7 +76,7 @@ class VirtualMemoryScheme(Scene):
         # 1. Центральный контейнер
         # =========================
         container_height = 5.5
-        container_width = 4
+        container_width = 3
 
         left = container_width / 2
         top = container_height / 2
@@ -127,11 +127,13 @@ class VirtualMemoryScheme(Scene):
         # =========================
         # 2. Заголовок
         # =========================
-        title = Text(
-            "Виртуальная память",
-            font_size=28,
-            color=TEXT_COLOR
-        ).next_to(top_wave, UP, buff=0.3)
+        title = Paragraph(
+            "Виртуальная память", 
+            "приложения", 
+            font_size=22, 
+            line_spacing=0.1,
+            alignment="center"
+        ).next_to(top_wave, UP, buff=0.1)
 
         # =========================
         # 3. Блок "заголовок"
@@ -145,7 +147,7 @@ class VirtualMemoryScheme(Scene):
         ).move_to([0, top - 1, 0])
 
         header_text = Text(
-            "заголовок",
+            "заголовки",
             font_size=16,
             color=TEXT_COLOR
         ).move_to(header_block.get_center())
@@ -187,9 +189,15 @@ class VirtualMemoryScheme(Scene):
         # =========================
         dashed_lines = create_vertical_dashed_lines(stripes[0].get_corner(UR) + LEFT*0.2, 0.7 , 5, 1)   # ← новая линия
         
-        stripes[0].next_to(dashed_lines[0].get_start() + LEFT * 1.8, DOWN, buff=0)
-        stripes[1].next_to(dashed_lines[1].get_start() + LEFT * 1.8, DOWN, buff=0)
-        stripes[2].next_to(dashed_lines[3].get_start() + LEFT * 1.8, DOWN, buff=0)
+        # stripes[0].next_to(dashed_lines[0].get_start() + LEFT * 1.8, DOWN, buff=0)
+        # stripes[1].next_to(dashed_lines[1].get_start() + LEFT * 1.8, DOWN, buff=0)
+        # stripes[2].next_to(dashed_lines[3].get_start() + LEFT * 1.8, DOWN, buff=0)
+
+        stripes[0].next_to(dashed_lines[0], DOWN, buff=0)
+        stripes[1].next_to(dashed_lines[1], DOWN, buff=0)
+        stripes[2].next_to(dashed_lines[3], DOWN, buff=0)
+        for stripe in stripes:
+            stripe.align_to(left_line, LEFT)
         # =========================
         # Добавление вертикальных двунаправленных стрелочек
         # =========================
@@ -305,8 +313,9 @@ class VirtualMemoryScheme(Scene):
         )
 
         main_container.move_to(ORIGIN)
-        main_container.to_edge(RIGHT, buff=1.0)  # ← начальная позиция справа (~40% экрана)
+        # main_container.to_edge(RIGHT, buff=1.0)  # ← начальная позиция справа (~40% экрана)
         self.add(main_container)
+        self.wait(6)
     # Этап 1 - убираем ненужные элементы
         self.play(
             FadeOut(left_text),
@@ -323,7 +332,7 @@ class VirtualMemoryScheme(Scene):
         self.wait(0.3)
         # Этап 2 - сдвигаем схему
         self.play(
-            main_container.animate.shift(LEFT * 7.4),
+            main_container.animate.to_edge(LEFT, buff=1.1),
             run_time=2
         )
         self.wait(0.3)
@@ -409,8 +418,19 @@ class VirtualMemoryScheme(Scene):
         expanded_label.align_to(stripes[2].get_top(), UP)        # выравнивание по верхнему краю
         expanded_label.shift(DOWN*0.02, RIGHT*0.05)  # маленький вертикальный отступ, если нужен
         
+        adress_top = Text("0x140004000", font_size=10, color=TEXT_COLOR)
+        adress_bot = Text("0x140007000", font_size=10, color=TEXT_COLOR)
+        
+        # Позиционируем верхний адрес относительно левого верхнего угла растянутого блока
+        adress_top.next_to(stripes[2].get_corner(UL), LEFT, buff=0.1)
+        
+        # Позиционируем нижний адрес относительно левого нижнего угла растянутого блока
+        adress_bot.next_to(stripes[2].get_corner(DL), LEFT, buff=0.1)
+
         self.play(
             Write(expanded_label),
+            Write(adress_top), # Заменил Create на Write для текста
+            Write(adress_bot), # ТЕПЕРЬ ОН ПРОРИСУЕТСЯ
             run_time=1
         )
         self.wait(1)
