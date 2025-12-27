@@ -580,43 +580,45 @@ class VirtualMemoryScheme(Scene):
         # Собираем финальную группу и позиционируем её
         os_group = VGroup(os_rect, os_labels).to_edge(UP, buff=0.8).shift(LEFT * 2)
 
-        # 5.2 Блок Файловая система
+        # 5.2 Блок Файловая система (Упрощенный и точный список)
         fs_title = Text("Файловая система", font_size=16, color=BLUE_B, weight=BOLD)
-        fs_paths = VGroup(
-            Text("Каталог приложения", font_size=12),
-            Text("C:\\Windows\\System32\\", font_size=12),
-            Text("C:\\Windows\\", font_size=12),
-            Text("Рабочий каталог", font_size=12),
-            Text("PATH", font_size=12),
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
         
-        fs_group = VGroup(fs_title, fs_paths).arrange(DOWN, buff=0.25, aligned_edge=LEFT)
-        fs_rect = SurroundingRectangle(fs_group, color=BLUE, buff=0.2, fill_opacity=0.1)
+        fs_paths = VGroup(
+            Text("Каталог приложения", font_size=13),
+            Text("C:\\Windows\\System32\\", font_size=13),
+            Text("C:\\Windows\\System\\", font_size=13),
+            Text("C:\\Windows\\", font_size=13),
+            Text("Рабочий каталог", font_size=13),
+            Text("PATH", font_size=13, color=YELLOW_A), # Просто слово, как и просили
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
+        
+        fs_group = VGroup(fs_title, fs_paths).arrange(DOWN, buff=0.15, aligned_edge=LEFT)
+        fs_rect = SurroundingRectangle(fs_group, color=BLUE, buff=0.15, fill_opacity=0.1)
+        
         fs_full = VGroup(fs_rect, fs_group)
         fs_full.next_to(outer_shape, RIGHT, buff=0.7, aligned_edge=DOWN)
 
         self.play(FadeIn(os_group), FadeIn(fs_full))
 
         # =========================
-        # Этап 6 - Адаптированная анимация поиска
+        # Этап 6 - Обновленная анимация поиска (6 пунктов в ФС)
         # =========================
 
         # Формат: (индекс_dll, индекс_пути_фс, найдено, нужно_ли_искать_в_фс)
+        # Индексы ФС: 0-Каталог, 1-System32, 2-System, 3-Windows, 4-Рабочий, 5-PATH
         search_logic = [
-            (0, 1, True, False),   # kernel32 -> Сразу ок (без анимации ФС)
-            (1, 1, True, False),   # user32   -> Сразу ок (без анимации ФС)
-            (2, 4, True, True),    # libmysql -> Поиск до PATH (индекс 4)
-            (3, 4, False, True)    # Qt6Gui   -> Поиск везде, не найдено
+            (0, 1, True, False),   # kernel32 -> Находим в System32 (индекс 1) без анимации перебора
+            (1, 1, True, False),   # user32   -> Находим в System32 (индекс 1)
+            (2, 5, True, True),    # libmysql -> Ищем везде и находим в PATH (индекс 5)
+            (3, 5, False, True)    # Qt6Gui   -> Ищем везде (0-5) и не находим
         ]
 
         dll_pointer_arrow = VGroup()
-        # Точка выхода из блока ОС
         common_start_point = os_group.get_corner(DL) + RIGHT * 0.2
 
         for i, (dll_idx, target_fs_idx, is_found, need_fs_search) in enumerate(search_logic):
             
-            # --- 1. Левая стрелка (Указатель ОС на таблицу импорта) ---
-            # Находим позицию конкретной DLL в таблице
+            # --- 1. Левая стрелка (ОС -> Таблица импорта) ---
             target_dll_pos = [import_table_rect.get_center()[0] + 0.3, dll_entries[dll_idx].get_center()[1], 0]
             dll_corner = [common_start_point[0], target_dll_pos[1], 0]
             
@@ -635,6 +637,7 @@ class VirtualMemoryScheme(Scene):
             if need_fs_search:
                 active_search_arrow = VGroup() 
                 
+                # Цикл проходит по всем пунктам до целевого включительно
                 for fs_idx in range(target_fs_idx + 1):
                     start_p = common_start_point + RIGHT * 0.1 
                     end_p = fs_paths[fs_idx].get_left()
@@ -646,34 +649,31 @@ class VirtualMemoryScheme(Scene):
                             corner_p, end_p, 
                             color=RED, 
                             buff=0, 
-                            stroke_width=8, # Немного уменьшил с 12 до 8 для аккуратности
-                            tip_length=0.25 
+                            stroke_width=6, 
+                            tip_length=0.2 
                         )
                     )
 
                     if fs_idx == 0:
-                        self.play(Create(new_step_arrow), run_time=0.3)
+                        self.play(Create(new_step_arrow), run_time=0.2)
                         active_search_arrow = new_step_arrow
                     else:
-                        self.play(Transform(active_search_arrow, new_step_arrow), run_time=0.3)
+                        # Скорость поиска увеличивается для длинных списков
+                        self.play(Transform(active_search_arrow, new_step_arrow), run_time=0.2)
                     
-                    self.wait(0.1)
+                    self.wait(0.05)
                 
-                # Подсветка найденного элемента в ФС
                 if is_found:
                     highlight = SurroundingRectangle(fs_paths[target_fs_idx], color=YELLOW, buff=0.05, stroke_width=3)
                     self.play(Create(highlight), fs_paths[target_fs_idx].animate.set_color(YELLOW), run_time=0.2)
-                    self.wait(0.4)
-            else:
-                # Если поиск в ФС не нужен (для первых двух DLL)
-                self.wait(0.7)
+                    self.wait(0.3)
+            
 
             # --- 3. Результат (Галочка или Крестик) ---
             if is_found:
                 mark = Tex("\\checkmark", color=GREEN).scale(0.7).next_to(dll_entries[dll_idx], RIGHT*0.8, buff=0.2)
                 self.play(Write(mark), run_time=0.3)
                 
-                # Убираем временные стрелки поиска и подсветку, если они были
                 if need_fs_search:
                     self.play(
                         FadeOut(active_search_arrow),
@@ -687,17 +687,39 @@ class VirtualMemoryScheme(Scene):
                 if need_fs_search:
                     self.play(FadeOut(active_search_arrow), run_time=0.4)
 
-        # --- 4. Финал сценария (Ошибка для Qt6Gui) ---
-        self.wait(0.5)
+        # --- 4. Финал сценария (Исправленное появление ошибки) ---
+        self.wait(0.8)
+        
+        # 1. Убираем стрелку
         self.play(FadeOut(dll_pointer_arrow), run_time=0.3)
         
+        # 2. Создаем объект ошибки (явно определяем финальный вид)
         try:
-            # Попытка загрузить картинку
-            final_img = ImageMobject("error_image.png").scale(1.5).move_to(ORIGIN)
-            self.play(FadeIn(final_img))
+            # Пытаемся загрузить картинку
+            error_obj = ImageMobject("error_image.png")
+            error_obj.height = 3.5 
         except:
-            # Если файла нет — выводим текст
-            error_msg = Text("STATUS_DLL_NOT_FOUND", font="Monospace", color=RED).scale(1).to_edge(DOWN, buff=1.5)
-            self.play(FadeIn(error_msg))
+            # Если картинки нет, создаем текст
+            t = Text("STATUS_DLL_NOT_FOUND", font="Monospace", color=RED, weight=BOLD).scale(0.8)
+            r = SurroundingRectangle(t, color=RED, buff=0.2)
+            error_obj = VGroup(r, t) # Используем VGroup для текста
+
+        # Находим позицию последнего крестика. 
+        # Если переменная mark потерялась, берем позицию справа от последней DLL
+        last_mark_pos = dll_entries[-1].get_right() + RIGHT * 0.5
+
+        # 3. Устанавливаем начальное состояние
+        error_obj.move_to(last_mark_pos)
+        error_obj.scale(0.01) # Уменьшаем в точку
+        
+        # Добавляем на сцену перед анимацией
+        self.add(error_obj)
+
+        # 4. Анимация "вылета"
+        self.play(
+            error_obj.animate.move_to(ORIGIN).scale(80), # 0.01 * 100 = 1 (исходный размер)
+            run_time=1.5,
+            rate_func=lambda t: 1 - 2**(-5 * t) if t > 0 else 0
+        )
 
         self.wait(3)
