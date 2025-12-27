@@ -607,8 +607,8 @@ class VirtualMemoryScheme(Scene):
         # Формат: (индекс_dll, индекс_пути_фс, найдено, нужно_ли_искать_в_фс)
         # Индексы ФС: 0-Каталог, 1-System32, 2-System, 3-Windows, 4-Рабочий, 5-PATH
         search_logic = [
-            (0, 1, True, False),   # kernel32 -> Находим в System32 (индекс 1) без анимации перебора
-            (1, 1, True, False),   # user32   -> Находим в System32 (индекс 1)
+            (0, 1, True, False),   # kernel32 ->  без анимации перебора
+            (1, 1, True, False),   # user32   -> без анимации перебора
             (2, 5, True, True),    # libmysql -> Ищем везде и находим в PATH (индекс 5)
             (3, 5, False, True)    # Qt6Gui   -> Ищем везде (0-5) и не находим
         ]
@@ -628,10 +628,10 @@ class VirtualMemoryScheme(Scene):
             )
 
             if i == 0:
-                self.play(Create(new_dll_arrow), run_time=0.5)
+                self.play(Create(new_dll_arrow), run_time=0.7)
                 dll_pointer_arrow = new_dll_arrow
             else:
-                self.play(Transform(dll_pointer_arrow, new_dll_arrow), run_time=0.5)
+                self.play(Transform(dll_pointer_arrow, new_dll_arrow), run_time=0.7)
 
             # --- 2. Логика поиска в Файловой Системе ---
             if need_fs_search:
@@ -655,11 +655,11 @@ class VirtualMemoryScheme(Scene):
                     )
 
                     if fs_idx == 0:
-                        self.play(Create(new_step_arrow), run_time=0.2)
+                        self.play(Create(new_step_arrow), run_time=0.3)
                         active_search_arrow = new_step_arrow
                     else:
                         # Скорость поиска увеличивается для длинных списков
-                        self.play(Transform(active_search_arrow, new_step_arrow), run_time=0.2)
+                        self.play(Transform(active_search_arrow, new_step_arrow), run_time=0.3)
                     
                     self.wait(0.05)
                 
