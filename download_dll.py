@@ -471,6 +471,7 @@ class VirtualMemoryScheme(Scene):
         dll_entries = VGroup(
             Text("kernel32.dll", font_size=16, color=WHITE),
             Text("user32.dll", font_size=16, color=WHITE),
+            Text("libmysql.dll", font_size=16, color=WHITE),
             Text("Qt6Gui.dll", font_size=16, color=WHITE)
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
 
@@ -517,17 +518,33 @@ class VirtualMemoryScheme(Scene):
         # x_offset = stripe_center_x - current_x
         # import_table_group.shift(RIGHT * x_offset * 0.5)
 
+        # =========================
+        # Добавление байтовых нулей в правый нижний угол .rdata
+        # =========================
+        
+        # Создаем текстовые строки
+        zero_bytes = VGroup(
+            Text("... 00 00 00", font_size=16, color=TEXT_COLOR),
+            Text("00 00 00 00 00 00 00 00", font_size=16, color=TEXT_COLOR)
+        ).arrange(DOWN, aligned_edge=RIGHT, buff=0.1)
+
+        # Позиционируем внутри stripes[2] (правый нижний угол)
+        # Делаем небольшой отступ от краев (buff=0.2)
+        zero_bytes.move_to(stripes[2].get_bottom())
+        zero_bytes.shift(UP * 0.3)
+
         # 4.9 Добавляем на сцену
         self.add(import_table_group)
 
         # 4.10 Анимация появления
-        # Сначала появляется прямоугольник
+        # Сначала появляется прямоугольник таблицы И байтовые нули в углу
         self.play(
             Create(import_table_rect),
+            FadeIn(zero_bytes), # Появление байтов
             run_time=0.5
         )
 
-        # Затем заголовок
+        # Затем заголовок "Import Table"
         self.play(
             Write(dir_title),
             run_time=0.3
@@ -581,37 +598,25 @@ class VirtualMemoryScheme(Scene):
         self.play(FadeIn(os_group), FadeIn(fs_full))
 
         # =========================
-        # Этап 6 - Анимация поиска
+        # Этап 6 - Адаптированная анимация поиска
         # =========================
 
+        # Формат: (индекс_dll, индекс_пути_фс, найдено, нужно_ли_искать_в_фс)
         search_logic = [
-            (0, 1, True),   # kernel32 -> System32
-            (1, 4, True),   # user32 -> PATH
-            (2, 4, False)   # Qt6Gui -> Не найдено
+            (0, 1, True, False),   # kernel32 -> Сразу ок (без анимации ФС)
+            (1, 1, True, False),   # user32   -> Сразу ок (без анимации ФС)
+            (2, 4, True, True),    # libmysql -> Поиск до PATH (индекс 4)
+            (3, 4, False, True)    # Qt6Gui   -> Поиск везде, не найдено
         ]
 
         dll_pointer_arrow = VGroup()
-        
-        # Задаем общую точку начала для обеих стрелок у ЛЕВОГО края блока ОС
-        # get_corner(DL) - это левый нижний угол. Сдвигаем чуть вправо на 0.2
-        common_start_point = os_group.get_corner(DL) + RIGHT * 0.005
-
-        # =========================
-        # Этап 6 - Анимация поиска
-        # =========================
-
-        search_logic = [
-            (0, 1, True),   # kernel32 -> System32
-            (1, 4, True),   # user32 -> PATH
-            (2, 4, False)   # Qt6Gui -> Не найдено
-        ]
-
-        dll_pointer_arrow = VGroup()
+        # Точка выхода из блока ОС
         common_start_point = os_group.get_corner(DL) + RIGHT * 0.2
 
-        for i, (dll_idx, target_fs_idx, is_found) in enumerate(search_logic):
+        for i, (dll_idx, target_fs_idx, is_found, need_fs_search) in enumerate(search_logic):
             
-            # --- 1. Левая стрелка (ТОНКАЯ: stroke_width=2) ---
+            # --- 1. Левая стрелка (Указатель ОС на таблицу импорта) ---
+            # Находим позицию конкретной DLL в таблице
             target_dll_pos = [import_table_rect.get_center()[0] + 0.3, dll_entries[dll_idx].get_center()[1], 0]
             dll_corner = [common_start_point[0], target_dll_pos[1], 0]
             
@@ -626,62 +631,73 @@ class VirtualMemoryScheme(Scene):
             else:
                 self.play(Transform(dll_pointer_arrow, new_dll_arrow), run_time=0.5)
 
-            # --- 2. Правая стрелка (ТОЛСТАЯ: stroke_width=6) ---
-            active_search_arrow = VGroup() 
-            
-            for fs_idx in range(target_fs_idx + 1):
-                start_p = common_start_point + RIGHT * 0.1 
-                end_p = fs_paths[fs_idx].get_left()
-                corner_p = [start_p[0], end_p[1], 0]
+            # --- 2. Логика поиска в Файловой Системе ---
+            if need_fs_search:
+                active_search_arrow = VGroup() 
                 
-                # --- 2. Правая стрелка (Увеличенная ширина и наконечник) ---
-                new_step_arrow = VGroup(
-                    Line(start_p, corner_p, color=RED, stroke_width=4),
-                    Arrow(
-                        corner_p, end_p, 
-                        color=RED, 
-                        buff=0, 
-                        stroke_width=12,          # Сильно увеличиваем толщину самой линии
-                        tip_length=0.25         # Увеличиваем длину наконечник
+                for fs_idx in range(target_fs_idx + 1):
+                    start_p = common_start_point + RIGHT * 0.1 
+                    end_p = fs_paths[fs_idx].get_left()
+                    corner_p = [start_p[0], end_p[1], 0]
+                    
+                    new_step_arrow = VGroup(
+                        Line(start_p, corner_p, color=RED, stroke_width=4),
+                        Arrow(
+                            corner_p, end_p, 
+                            color=RED, 
+                            buff=0, 
+                            stroke_width=8, # Немного уменьшил с 12 до 8 для аккуратности
+                            tip_length=0.25 
+                        )
                     )
-                )
 
-                if fs_idx == 0:
-                    self.play(Create(new_step_arrow), run_time=0.3)
-                    active_search_arrow = new_step_arrow
-                else:
-                    self.play(Transform(active_search_arrow, new_step_arrow), run_time=0.3)
+                    if fs_idx == 0:
+                        self.play(Create(new_step_arrow), run_time=0.3)
+                        active_search_arrow = new_step_arrow
+                    else:
+                        self.play(Transform(active_search_arrow, new_step_arrow), run_time=0.3)
+                    
+                    self.wait(0.1)
                 
-                self.wait(0.1)
-
-            # --- 3. Результат ---
-            if is_found:
-                highlight = SurroundingRectangle(fs_paths[target_fs_idx], color=YELLOW, buff=0.05, stroke_width = 3)
-                self.play(Create(highlight), fs_paths[target_fs_idx].animate.set_color(YELLOW), run_time=0.2)
-                self.wait(0.4)
-                
-                mark = Tex("\\checkmark", color=GREEN).scale(0.8).next_to(dll_entries[dll_idx], RIGHT, buff=0.3)
-                self.play(Write(mark))
-                
-                self.play(
-                    FadeOut(active_search_arrow),
-                    FadeOut(highlight),
-                    fs_paths[target_fs_idx].animate.set_color(WHITE),
-                    run_time=0.4
-                )
+                # Подсветка найденного элемента в ФС
+                if is_found:
+                    highlight = SurroundingRectangle(fs_paths[target_fs_idx], color=YELLOW, buff=0.05, stroke_width=3)
+                    self.play(Create(highlight), fs_paths[target_fs_idx].animate.set_color(YELLOW), run_time=0.2)
+                    self.wait(0.4)
             else:
-                self.wait(0.2)
-                mark = Text("×", color=RED).scale(1.2).next_to(dll_entries[dll_idx], RIGHT, buff=0.3)
-                self.play(Write(mark))
-                self.play(FadeOut(active_search_arrow), run_time=0.4)
-                
-                # Финальная картинка (уменьшенная)
-                self.play(FadeOut(dll_pointer_arrow), run_time=0.3) # Скрываем указатель перед финалом
-                try:
-                    final_img = ImageMobject("error_image.png").scale(1).move_to(ORIGIN)
-                    self.play(FadeIn(final_img))
-                except:
-                    error_msg = Text("DLL NOT FOUND", color=RED).scale(1.2).to_edge(DOWN)
-                    self.play(FadeIn(error_msg))
+                # Если поиск в ФС не нужен (для первых двух DLL)
+                self.wait(0.7)
 
-        self.wait(2)
+            # --- 3. Результат (Галочка или Крестик) ---
+            if is_found:
+                mark = Tex("\\checkmark", color=GREEN).scale(0.7).next_to(dll_entries[dll_idx], RIGHT*0.8, buff=0.2)
+                self.play(Write(mark), run_time=0.3)
+                
+                # Убираем временные стрелки поиска и подсветку, если они были
+                if need_fs_search:
+                    self.play(
+                        FadeOut(active_search_arrow),
+                        FadeOut(highlight),
+                        fs_paths[target_fs_idx].animate.set_color(WHITE),
+                        run_time=0.4
+                    )
+            else:
+                mark = Text("×", color=RED).scale(1).next_to(dll_entries[dll_idx], RIGHT*0.8, buff=0.2)
+                self.play(Write(mark), run_time=0.3)
+                if need_fs_search:
+                    self.play(FadeOut(active_search_arrow), run_time=0.4)
+
+        # --- 4. Финал сценария (Ошибка для Qt6Gui) ---
+        self.wait(0.5)
+        self.play(FadeOut(dll_pointer_arrow), run_time=0.3)
+        
+        try:
+            # Попытка загрузить картинку
+            final_img = ImageMobject("error_image.png").scale(1.5).move_to(ORIGIN)
+            self.play(FadeIn(final_img))
+        except:
+            # Если файла нет — выводим текст
+            error_msg = Text("STATUS_DLL_NOT_FOUND", font="Monospace", color=RED).scale(1).to_edge(DOWN, buff=1.5)
+            self.play(FadeIn(error_msg))
+
+        self.wait(3)
