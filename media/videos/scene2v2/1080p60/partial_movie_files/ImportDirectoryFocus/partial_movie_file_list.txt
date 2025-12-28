@@ -1,0 +1,10 @@
+# This file is used internally by FFMPEG.
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2257293077_3412558187_2023860264.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2135761390_4189728552_4229393753.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2135761390_1686647601_2847849562.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2135761390_4114934325_968780163.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2135761390_3839553638_2980525957.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2135761390_3550373455_2601714878.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2135761390_3201849554_111065708.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2135761390_1860775343_2962948507.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/scene2v2/1080p60/partial_movie_files/ImportDirectoryFocus/2135761390_2164560990_1641611065.mp4'
