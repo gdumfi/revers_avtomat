@@ -2,15 +2,12 @@ from manim import *
 
 class VirtualMemoryScheme(Scene):
     def construct(self):
-
         # =========================
         # Цветовая схема (инверсия)
-        # =========================
+
         self.camera.background_color = BLACK
         LINE_COLOR = WHITE
         TEXT_COLOR = WHITE
-
-        
 
         def dashed_from(block):
             start = block.get_corner(UR)
@@ -41,30 +38,8 @@ class VirtualMemoryScheme(Scene):
                 dash_length=0.08,
                 color=LINE_COLOR
             )
-        
-        
-
-        def dashed_from_bottom(block):
-            start = block.get_corner(DR)
-            end = start + RIGHT * 1
-            return DashedLine(
-                start,
-                end,
-                dash_length=0.08,
-                color=LINE_COLOR
-            )
-        
 
         def create_vertical_dashed_lines(start_pos, interval, count=5, length=1):
-            """
-            Создает вертикальные пунктирные линии одна под другой через равные промежутки
-
-            Parameters:
-            start_pos: начальная позиция (np.array или list) для первой линии
-            interval: расстояние между линиями по вертикали (float)
-            count: количество линий (int)
-            length: длина линий по горизонтали (float)
-            """
             lines = VGroup()
 
             for i in range(count):
@@ -82,6 +57,7 @@ class VirtualMemoryScheme(Scene):
                 lines.add(line)
 
             return lines
+        
         # =========================
         # 1. Центральный контейнер
         # =========================
@@ -167,7 +143,6 @@ class VirtualMemoryScheme(Scene):
         # =========================
         # 4. Три блока РАЗНОЙ высоты
         # =========================
-        # Разные высоты для каждого блока
         stripe_heights = [0.6, 1.0, 1.5]  # разная высота для .text, .data, .rdata
         colors_my = ["RED_A", "BLUE_A", "GREEN_A"]
         
@@ -183,7 +158,6 @@ class VirtualMemoryScheme(Scene):
             for i in range(3)
         ])
         
-        # Располагаем блоки вертикально под header_block
         stripes.arrange(DOWN, buff=0, aligned_edge=UP)
         stripes.next_to(header_block, DOWN, buff=0.2)
         
@@ -200,10 +174,6 @@ class VirtualMemoryScheme(Scene):
         # 5. Пунктирные линии
         # =========================
         dashed_lines = create_vertical_dashed_lines(stripes[0].get_corner(UR) + LEFT*0.2, 0.7 , 5, 1)   # ← новая линия
-        
-        # stripes[0].next_to(dashed_lines[0].get_start() + LEFT * 1.8, DOWN, buff=0)
-        # stripes[1].next_to(dashed_lines[1].get_start() + LEFT * 1.8, DOWN, buff=0)
-        # stripes[2].next_to(dashed_lines[3].get_start() + LEFT * 1.8, DOWN, buff=0)
 
         stripes[0].next_to(dashed_lines[0], DOWN, buff=0)
         stripes[1].next_to(dashed_lines[1], DOWN, buff=0)
@@ -236,50 +206,6 @@ class VirtualMemoryScheme(Scene):
                 color=TEXT_COLOR
             ).next_to(arrow, RIGHT*0.5, buff=0.2)
             align_labels.add(label)
-        # # =========================
-        # # 6. Подписи слева
-        # # =========================
-        # left_text = VGroup(
-        #     Text("0x140001000", font_size=18, color=TEXT_COLOR),
-        #     Text("Image base + base of code", font_size=16, color=TEXT_COLOR)
-        # ).arrange(DOWN, aligned_edge=LEFT)
-
-        # left_text.next_to(stripes[0], LEFT, buff=1.0)
-
-        # vertical_line = Line(
-        #     left_text.get_top() + UP * 0.3,
-        #     left_text.get_bottom() + DOWN * 0.3,
-        #     color=LINE_COLOR
-        # )
-
-        # crosses = VGroup(*[
-        #     Text("×", font_size=14, color=TEXT_COLOR).move_to(
-        #         vertical_line.point_from_proportion(p)
-        #     )
-        #     for p in [0.25, 0.5, 0.75]
-        # ])
-
-        # arrow_up = Arrow(
-        #     vertical_line.get_top() + UP * 0.1,
-        #     vertical_line.get_top() + UP * 0.4,
-        #     buff=0,
-        #     color=LINE_COLOR
-        # )
-
-        # arrow_down = Arrow(
-        #     vertical_line.get_bottom() + DOWN * 0.1,
-        #     vertical_line.get_bottom() + DOWN * 0.4,
-        #     buff=0,
-        #     color=LINE_COLOR
-        # )
-
-        # left_annotations = VGroup(
-        #     left_text,
-        #     vertical_line,
-        #     crosses,
-        #     arrow_up,
-        #     arrow_down
-        # )
 
         # =========================
         # 7. Подпись справа
@@ -291,8 +217,6 @@ class VirtualMemoryScheme(Scene):
 
         right_text.next_to(header_block.get_corner(UR), RIGHT*0.3, buff=1.0)
         line_header = dashed_from(header_block)
-
-        
 
         # =========================
         # 8. Подпись слева
@@ -317,7 +241,6 @@ class VirtualMemoryScheme(Scene):
             dashed_lines,
             arrows,
             align_labels,
-            # left_annotations,
             right_text,
             line_header,
             left_text,
@@ -394,12 +317,6 @@ class VirtualMemoryScheme(Scene):
         # Вычисляем центр нового положения
         new_center_y = (new_top + new_bottom) / 2
         new_height = new_top - new_bottom
-
-        # self.play(
-        #     FadeOut(text_labels[2]),
-        #     run_time=0.5
-        # )
-        # stripes[2].remove(text_labels[2])
         
         # Создаем анимацию растягивания
         self.play(
@@ -407,20 +324,6 @@ class VirtualMemoryScheme(Scene):
                             .stretch_to_fit_height(new_height),
             run_time=1
         )
-        
-        # # 3.4 Добавляем подпись к растянутому блоку (опционально)
-        # expanded_label = Text(
-        #     "Расширенный блок",
-        #     font_size=18,
-        #     color=TEXT_COLOR
-        # ).next_to(stripe_bottom, UP, buff=0.2)
-        
-        # self.play(
-        #     Write(expanded_label),
-        #     run_time=1
-        # )
-
-        
         
         self.wait(0.5)
         expanded_label = Text(
@@ -512,12 +415,6 @@ class VirtualMemoryScheme(Scene):
             # После масштабирования нужно еще раз уточнить X-центровку
             import_table_group.set_x(stripes[2].get_center()[0])
 
-        # 4.8 Центрируем таблицу по горизонтали внутри stripes[2] (опционально)
-        # current_x = import_table_group.get_center()[0]
-        # stripe_center_x = stripes[2].get_center()[0]
-        # x_offset = stripe_center_x - current_x
-        # import_table_group.shift(RIGHT * x_offset * 0.5)
-
         # =========================
         # Добавление байтовых нулей в правый нижний угол .rdata
         # =========================
@@ -586,10 +483,10 @@ class VirtualMemoryScheme(Scene):
         fs_paths = VGroup(
             Text("Каталог приложения", font_size=13),
             Text("C:\\Windows\\System32\\", font_size=13),
-            Text("C:\\Windows\\System\\", font_size=13),
             Text("C:\\Windows\\", font_size=13),
-            Text("Рабочий каталог", font_size=13),
-            Text("PATH", font_size=13, color=YELLOW_A), # Просто слово, как и просили
+            Text("Текущий каталог (PWD)", font_size=13),
+            Text("...", font_size=13),
+            Text("PATH = ... ; ... ; ... ;", font_size=13, color=YELLOW_A), 
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
         
         fs_group = VGroup(fs_title, fs_paths).arrange(DOWN, buff=0.15, aligned_edge=LEFT)
@@ -667,7 +564,6 @@ class VirtualMemoryScheme(Scene):
                     highlight = SurroundingRectangle(fs_paths[target_fs_idx], color=YELLOW, buff=0.05, stroke_width=3)
                     self.play(Create(highlight), fs_paths[target_fs_idx].animate.set_color(YELLOW), run_time=0.2)
                     self.wait(0.3)
-            
 
             # --- 3. Результат (Галочка или Крестик) ---
             if is_found:
