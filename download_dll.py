@@ -1,65 +1,68 @@
 from manim import *
+import numpy as np
+
 
 class VirtualMemoryScheme(Scene):
     def construct(self):
-        # =========================
-        # Цветовая схема (инверсия)
-
         self.camera.background_color = BLACK
         LINE_COLOR = WHITE
         TEXT_COLOR = WHITE
 
-        def dashed_from(block):
-            start = block.get_corner(UR)
-            end = start + RIGHT * 1
-            return DashedLine(
-                start,
-                end,
-                dash_length=0.08,
-                color=LINE_COLOR
-            )
-        
+        # -------------------------
+        # helpers
+        # -------------------------
         def dashed_from_left(block):
             start = block.get_corner(UL)
             end = start + LEFT * 1
-            return DashedLine(
-                start,
-                end,
-                dash_length=0.08,
-                color=LINE_COLOR
-            )
-        
+            return DashedLine(start, end, dash_length=0.08, color=LINE_COLOR)
+
         def dashed_from_left_bottom(block):
             start = block.get_corner(DL)
             end = start + LEFT * 1
-            return DashedLine(
+            return DashedLine(start, end, dash_length=0.08, color=LINE_COLOR)
+
+        def clamp(v, lo, hi):
+            return max(lo, min(hi, v))
+
+        def left_edge_point_at_y(mob, y, inset=0.06, outside=0.06):
+            topy = mob.get_top()[1] - inset
+            boty = mob.get_bottom()[1] + inset
+            yy = clamp(y, boty, topy)
+            return np.array([mob.get_left()[0] - outside, yy, 0])
+
+        def right_edge_point_at_y(mob, y, inset=0.06, outside=0.06):
+            topy = mob.get_top()[1] - inset
+            boty = mob.get_bottom()[1] + inset
+            yy = clamp(y, boty, topy)
+            return np.array([mob.get_right()[0] + outside, yy, 0])
+
+        def fit_inside_container(content: Mobject, container: Mobject, pad_x=0.25, pad_y=0.45):
+            avail_w = (container.get_right()[0] - container.get_left()[0]) - 2 * pad_x
+            avail_h = (container.get_top()[1] - container.get_bottom()[1]) - 2 * pad_y
+            if content.width > avail_w:
+                content.scale_to_fit_width(avail_w)
+            if content.height > avail_h:
+                content.scale_to_fit_height(avail_h)
+            return content
+
+        def small_tip(curve_or_arrow, ratio=0.03):
+            # Manim allows attribute; keep very small.
+            curve_or_arrow.max_tip_length_to_length_ratio = ratio
+            return curve_or_arrow
+
+        def curved_arrow(start, end, angle, color, sw=2.4, tip_ratio=0.028):
+            a = CurvedArrow(
                 start,
                 end,
-                dash_length=0.08,
-                color=LINE_COLOR
+                angle=angle,
+                color=color,
+                stroke_width=sw,
             )
+            small_tip(a, tip_ratio)
+            return a
 
-        def create_vertical_dashed_lines(start_pos, interval, count=5, length=1):
-            lines = VGroup()
-
-            for i in range(count):
-                # Вычисляем позицию для текущей линии
-                line_start = start_pos + np.array([0, -i * interval, 0])
-                line_end = line_start + np.array([length, 0, 0])
-
-                # Создаем пунктирную линию
-                line = DashedLine(
-                    start=line_start,
-                    end=line_end,
-                    dash_length=0.08,
-                    color=LINE_COLOR
-                )
-                lines.add(line)
-
-            return lines
-        
         # =========================
-        # 1. Центральный контейнер
+        # 1) Контейнер
         # =========================
         container_height = 5.5
         container_width = 3
@@ -79,7 +82,7 @@ class VirtualMemoryScheme(Scene):
             ]),
             t_range=[-left, left],
             color=LINE_COLOR,
-            stroke_width = 2
+            stroke_width=2
         )
 
         bottom_wave = ParametricFunction(
@@ -90,62 +93,28 @@ class VirtualMemoryScheme(Scene):
             ]),
             t_range=[-left, left],
             color=LINE_COLOR,
-            stroke_width = 2
+            stroke_width=2
         )
 
-        left_line = Line(
-            bottom_wave.get_start(),
-            top_wave.get_start(),
-            color=LINE_COLOR
-        )
+        left_line = Line(bottom_wave.get_start(), top_wave.get_start(), color=LINE_COLOR)
+        right_line = Line(bottom_wave.get_end(), top_wave.get_end(), color=LINE_COLOR)
+        outer_shape = VGroup(top_wave, bottom_wave, left_line, right_line)
 
-        right_line = Line(
-            bottom_wave.get_end(),
-            top_wave.get_end(),
-            color=LINE_COLOR
-        )
-
-        outer_shape = VGroup(
-            top_wave,
-            bottom_wave,
-            left_line,
-            right_line
-        )
-
-        # =========================
-        # 2. Заголовок
-        # =========================
+        # Заголовок
         title = Paragraph(
-            "Виртуальная память", 
-            "приложения", 
-            font_size=22, 
+            "Виртуальная память",
+            "приложения",
+            font_size=22,
             line_spacing=0.1,
             alignment="center"
         ).next_to(top_wave, UP, buff=0.1)
 
         # =========================
-        # 3. Блок "заголовок"
+        # 2) Три секции (.text/.data/.rdata) -> оставляем только .rdata
         # =========================
-        header_block = Rectangle(
-            width=container_width,
-            height=0.5,
-            fill_opacity=0,
-            stroke_color=LINE_COLOR,
-            stroke_width=1,
-        ).move_to([0, top - 1, 0])
-
-        header_text = Text(
-            "заголовки",
-            font_size=16,
-            color=TEXT_COLOR
-        ).move_to(header_block.get_center())
-
-        # =========================
-        # 4. Три блока РАЗНОЙ высоты
-        # =========================
-        stripe_heights = [0.6, 1.0, 1.5]  # разная высота для .text, .data, .rdata
+        stripe_heights = [0.6, 1.0, 1.5]
         colors_my = ["RED_A", "BLUE_A", "GREEN_A"]
-        
+
         stripes = VGroup(*[
             Rectangle(
                 width=container_width,
@@ -157,220 +126,52 @@ class VirtualMemoryScheme(Scene):
             )
             for i in range(3)
         ])
-        
+
         stripes.arrange(DOWN, buff=0, aligned_edge=UP)
-        stripes.next_to(header_block, DOWN, buff=0.2)
-        
+        stripes.move_to([0, 0, 0])
+        stripes.align_to(left_line, LEFT)
+
         text_labels = [
             Text(".text", font_size=14, color=YELLOW_B),
             Text(".data", font_size=14, color=YELLOW_B),
             Text(".rdata", font_size=14, color=YELLOW_B)
         ]
-        
         for stripe, label in zip(stripes, text_labels):
             label.move_to(stripe.get_center())
             stripe.add(label)
-        # =========================
-        # 5. Пунктирные линии
-        # =========================
-        dashed_lines = create_vertical_dashed_lines(stripes[0].get_corner(UR) + LEFT*0.2, 0.7 , 5, 1)   # ← новая линия
-
-        stripes[0].next_to(dashed_lines[0], DOWN, buff=0)
-        stripes[1].next_to(dashed_lines[1], DOWN, buff=0)
-        stripes[2].next_to(dashed_lines[3], DOWN, buff=0)
-        for stripe in stripes:
-            stripe.align_to(left_line, LEFT)
-        # =========================
-        # Добавление вертикальных двунаправленных стрелочек
-        # =========================
-        arrows = VGroup()
-        arrow_offset = 0.6
-        for i in range(0, 4):
-            upper_end = dashed_lines[i].get_end() + LEFT * arrow_offset
-            lower_end = dashed_lines[i + 1].get_end() + LEFT * arrow_offset
-            arrow = DoubleArrow(
-                upper_end,
-                lower_end,
-                buff=0,
-                color=LINE_COLOR,
-                tip_length=0.2,  # ← добавить это
-                stroke_width=2
-            )
-            arrows.add(arrow)
-
-        align_labels = VGroup()
-        for arrow in arrows:
-            label = Text(
-                "0x1000",
-                font_size=16,
-                color=TEXT_COLOR
-            ).next_to(arrow, RIGHT*0.5, buff=0.2)
-            align_labels.add(label)
 
         # =========================
-        # 7. Подпись справа
+        # 3) СРАЗУ ФИНАЛ: оставляем .rdata и растягиваем
         # =========================
-        right_text = VGroup(
-            Text("Image base", font_size=16, color=TEXT_COLOR),
-            Text("0x140000000", font_size=16, color=TEXT_COLOR)
-        ).arrange(DOWN, aligned_edge=LEFT)
+        rdata = stripes[2]
+        rdata.remove(text_labels[2])
 
-        right_text.next_to(header_block.get_corner(UR), RIGHT*0.3, buff=1.0)
-        line_header = dashed_from(header_block)
-
-        # =========================
-        # 8. Подпись слева
-        # =========================
-        left_text = VGroup(
-            Text("0x140001000", font_size=14, color=TEXT_COLOR),
-            Text("Image base +", font_size=14, color=TEXT_COLOR),
-            Text("Base of code", font_size=14, color=TEXT_COLOR)
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
-        left_text.next_to(stripes.get_corner(UL) - 0.15, LEFT, buff=1.0)
-        left_text.shift(RIGHT)
-        left_dashed_line = dashed_from_left(stripes)
-        # =========================
-        # 9. Финальная сборка
-        # =========================
-        main_container = VGroup(
-            outer_shape,
-            title,
-            header_block,
-            header_text,
-            stripes,
-            dashed_lines,
-            arrows,
-            align_labels,
-            right_text,
-            line_header,
-            left_text,
-            left_dashed_line
-        )
-
-        main_container.move_to(ORIGIN)
-        # main_container.to_edge(RIGHT, buff=1.0)  # ← начальная позиция справа (~40% экрана)
-        self.add(main_container)
-        self.wait(6)
-    # Этап 1 - убираем ненужные элементы
-        self.play(
-            FadeOut(left_text),
-            FadeOut(align_labels),
-            FadeOut(arrows),
-            FadeOut(dashed_lines),
-            FadeOut(left_dashed_line),
-            FadeOut(right_text),
-            FadeOut(line_header),
-            run_time=1
-        )
-        
-        main_container.remove(left_text, align_labels, arrows, dashed_lines, left_dashed_line, right_text, line_header)
-        self.wait(0.3)
-        # Этап 2 - сдвигаем схему
-        self.play(
-            main_container.animate.to_edge(LEFT, buff=1.1),
-            run_time=2
-        )
-        self.wait(0.3)
-        # self.play(main_container.animate.shift(LEFT * 6), run_time=2)  # ← плавный сдвиг в левую половину; подберите дистанцию
-        # self.wait(1)
-
-        # =========================
-        # Этап 3 - Фокусируем внимание на третьем блоке
-        # =========================
-        
-        # 3.1 Мигаем границами нижнего прямоугольника два раза
-        for _ in range(2):
-            # Меняем цвет границ на желтый
-            self.play(
-                stripes[2].animate.set_stroke(color=RED_A, width=6),
-                run_time=0.2
-            )
-            self.wait(0.2)
-            # Возвращаем исходный цвет
-            self.play(
-                stripes[2].animate.set_stroke(color=LINE_COLOR, width=1),
-                run_time=0.2
-            )
-            self.wait(0.2)
-        
-        self.wait(0.5)
-        
-        # 3.2 Удаляем верхние два прямоугольника и заголовочный блок
-        elements_to_remove = VGroup(stripes[0], stripes[1], header_block, header_text)
-        self.play(
-            FadeOut(elements_to_remove),
-            run_time=1
-        )
-        
-        # Удаляем из main_container
-        main_container.remove(stripes[0], stripes[1], header_block, header_text)
-        stripes[2].remove(text_labels[2])
-        
-        # 3.3 Растягиваем оставшийся нижний блок на всю высоту
-        # Сохраняем текущую позицию нижнего края блока
-        current_bottom = stripes[2].get_bottom()
-        
-        # Вычисляем новую высоту (от текущего верха до верха outer_shape)
-        new_top = outer_shape.get_top()[1] - 0.3  # немного отступа от верха
-        new_bottom = outer_shape.get_bottom()[1] + 0.3  # немного отступа от низа
-        
-        # Вычисляем центр нового положения
+        new_top = outer_shape.get_top()[1] - 0.3
+        new_bottom = outer_shape.get_bottom()[1] + 0.3
         new_center_y = (new_top + new_bottom) / 2
         new_height = new_top - new_bottom
-        
-        # Создаем анимацию растягивания
-        self.play(
-            stripes[2].animate.move_to([stripes[2].get_center()[0], new_center_y, 0])
-                            .stretch_to_fit_height(new_height),
-            run_time=1
-        )
-        
-        self.wait(0.5)
-        expanded_label = Text(
-            ".rdata",
-            font_size=16,
-            color=TEXT_COLOR
-        )
-        expanded_label.align_to(stripes[2].get_corner(UL), LEFT)  # выравнивание по левому краю
-        expanded_label.align_to(stripes[2].get_top(), UP)        # выравнивание по верхнему краю
-        expanded_label.shift(DOWN*0.02, RIGHT*0.05)  # маленький вертикальный отступ, если нужен
-        
+
+        rdata.move_to([rdata.get_center()[0], new_center_y, 0]).stretch_to_fit_height(new_height)
+        rdata.align_to(left_line, LEFT)
+
+        expanded_label = Text(".rdata", font_size=16, color=TEXT_COLOR)
+        expanded_label.align_to(rdata.get_corner(UL), LEFT)
+        expanded_label.align_to(rdata.get_top(), UP)
+        expanded_label.shift(DOWN * 0.02 + RIGHT * 0.05)
+
         adress_top = Text("0x140004000", font_size=10, color=TEXT_COLOR)
         adress_bot = Text("0x140007000", font_size=10, color=TEXT_COLOR)
-        
-        # Позиционируем верхний адрес относительно левого верхнего угла растянутого блока
-        adress_top.next_to(stripes[2].get_corner(UL), LEFT, buff=0.1).shift(UP * 0.1)
-        
-        # Позиционируем нижний адрес относительно левого нижнего угла растянутого блока
-        adress_bot.next_to(stripes[2].get_corner(DL), LEFT, buff=0.1).shift(UP * 0.1)
+        adress_top.next_to(rdata.get_corner(UL), LEFT, buff=0.1).shift(UP * 0.1)
+        adress_bot.next_to(rdata.get_corner(DL), LEFT, buff=0.1).shift(UP * 0.1)
 
-        left_rdata_top_dashed = dashed_from_left(stripes[2])
-        left_rdata_down_dashed = dashed_from_left_bottom(stripes[2])
-
-        self.play(
-            Write(expanded_label),
-            Create(left_rdata_top_dashed),
-            Write(adress_top), # Заменил Create на Write для текста
-            Create(left_rdata_down_dashed),
-            Write(adress_bot), # ТЕПЕРЬ ОН ПРОРИСУЕТСЯ
-            
-            run_time=1
-        )
-        self.wait(1)
+        left_rdata_top_dashed = dashed_from_left(rdata)
+        left_rdata_down_dashed = dashed_from_left_bottom(rdata)
 
         # =========================
-        # Этап 4 - Добавляем Import Directory Table как в сцене поиска DLL
+        # 4) Import Table
         # =========================
+        dir_title = Text("Import Table", font_size=16, color=YELLOW_B, weight=BOLD)
 
-        # 4.1 Создаем заголовок Import Table
-        dir_title = Text(
-            "Import Table", 
-            font_size=16, 
-            color=YELLOW_B,
-            weight=BOLD
-        )
-
-        # 4.2 Список DLL (как в вашей сцене)
         dll_entries = VGroup(
             Text("kernel32.dll", font_size=16, color=WHITE),
             Text("user32.dll", font_size=16, color=WHITE),
@@ -378,13 +179,9 @@ class VirtualMemoryScheme(Scene):
             Text("Qt6Gui.dll", font_size=16, color=WHITE)
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
 
-        # 4.3 Создаем группу заголовка и списка DLL
-        # Оставляем aligned_edge=LEFT, чтобы текст был ровным столбиком
         dir_group = VGroup(dir_title, dll_entries).arrange(DOWN, buff=0.2, aligned_edge=LEFT)
-        
-        target_width = stripes[2].width * 0.9
-        
-        # 4.4 Создаем прямоугольник
+
+        target_width = rdata.width * 0.9
         import_table_rect = Rectangle(
             width=target_width,
             height=dir_group.height + 0.5,
@@ -394,228 +191,278 @@ class VirtualMemoryScheme(Scene):
             fill_opacity=0.3
         )
 
-        # 4.5 Помещаем текст ВНУТРЬ прямоугольника, прижимая к левому краю
-        # Центрируем по вертикали, но выравниваем по левому краю с отступом 0.2
         dir_group.move_to(import_table_rect.get_center())
         dir_group.align_to(import_table_rect.get_left() + RIGHT * 0.2, LEFT)
-        
+
         import_table_group = VGroup(import_table_rect, dir_group)
-
-        # 4.6 ПОЗИЦИОНИРОВАНИЕ ВСЕЙ ГРУППЫ
-        # 1. Ставим её под метку .rdata (вертикаль)
         import_table_group.next_to(expanded_label, DOWN, buff=0.3)
-        
-        # 2. Выравниваем по центру stripes[2] только по горизонтали (X-ось)
-        # Мы берем координату X центра stripes[2] и применяем её к группе
-        import_table_group.set_x(stripes[2].get_center()[0])
+        import_table_group.set_x(rdata.get_center()[0])
 
-        # 4.7 Масштабирование по высоте
-        if import_table_group.height > stripes[2].height * 0.8:
-            import_table_group.scale_to_fit_height(stripes[2].height * 0.8)
-            # После масштабирования нужно еще раз уточнить X-центровку
-            import_table_group.set_x(stripes[2].get_center()[0])
+        if import_table_group.height > rdata.height * 0.8:
+            import_table_group.scale_to_fit_height(rdata.height * 0.8)
+            import_table_group.set_x(rdata.get_center()[0])
 
-        # =========================
-        # Добавление байтовых нулей в правый нижний угол .rdata
-        # =========================
-        
-        # Создаем текстовые строки
+        # байты
         zero_bytes = VGroup(
             Text("... 00 00 00", font_size=16, color=TEXT_COLOR),
             Text("00 00 00 00 00 00 00 00", font_size=16, color=TEXT_COLOR)
         ).arrange(DOWN, aligned_edge=RIGHT, buff=0.1)
+        zero_bytes.move_to(rdata.get_bottom()).shift(UP * 0.3)
 
-        # Позиционируем внутри stripes[2] (правый нижний угол)
-        # Делаем небольшой отступ от краев (buff=0.2)
-        zero_bytes.move_to(stripes[2].get_bottom())
-        zero_bytes.shift(UP * 0.3)
-
-        # 4.9 Добавляем на сцену
-        self.add(import_table_group)
-
-        # 4.10 Анимация появления
-        # Сначала появляется прямоугольник таблицы И байтовые нули в углу
-        self.play(
-            Create(import_table_rect),
-            FadeIn(zero_bytes), # Появление байтов
-            run_time=0.5
+        # отметки (ВАЖНО: не перекрывать стрелками)
+        marks = VGroup(
+            Tex("\\checkmark", color=GREEN).scale(0.7).next_to(dll_entries[0], RIGHT * 0.8, buff=0.2),
+            Tex("\\checkmark", color=GREEN).scale(0.7).next_to(dll_entries[1], RIGHT * 0.8, buff=0.2),
+            Tex("\\checkmark", color=GREEN).scale(0.7).next_to(dll_entries[2], RIGHT * 0.8, buff=0.2),
+            Text("×", color=RED).scale(1).next_to(dll_entries[3], RIGHT * 0.8, buff=0.2)
         )
 
-        # Затем заголовок "Import Table"
-        self.play(
-            Write(dir_title),
-            run_time=0.3
-        )
+        # =========================
+        # 5) Левая финальная композиция (НЕ МЕНЯТЬ)
+        # =========================
+        left_final = VGroup(
+            outer_shape,
+            title,
+            rdata,
+            expanded_label,
+            left_rdata_top_dashed,
+            left_rdata_down_dashed,
+            adress_top,
+            adress_bot,
+            import_table_group,
+            zero_bytes,
+            marks
+        ).to_edge(LEFT, buff=1.1)
 
-        # Затем список DLL появляется по одному
-        for i, dll in enumerate(dll_entries):
-            self.play(
-                Write(dll),
-                run_time=0.3
+        # =========================
+        # 6) Правый стакан
+        # =========================
+        right_container = outer_shape.copy().to_edge(RIGHT, buff=1.1)
+
+        # IMPORTANT: в правом стакане "где-то в физ. памяти" — это про размещение/кадры,
+        # а VA pages остаются виртуальными и лишь отображаются на кадры физической памяти.
+        right_title = Text(
+            "где-то в физ. памяти",
+            font_size=20,
+            color=WHITE,
+            weight=BOLD
+        ).next_to(right_container, UP, buff=0.1)
+
+        mapped_title = Text("Mapped DLLs", font_size=16, color=YELLOW_B, weight=BOLD)
+        mapped_list = VGroup(
+            Text("ntdll.dll", font_size=14, color=WHITE),
+            Text("kernel32.dll", font_size=14, color=WHITE),
+            Text("user32.dll", font_size=14, color=WHITE),
+            Text("gdi32.dll", font_size=14, color=WHITE),
+            Text("advapi32.dll", font_size=14, color=WHITE),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.12)
+
+        mapped_group_text = VGroup(mapped_title, mapped_list).arrange(DOWN, aligned_edge=LEFT, buff=0.18)
+
+        mapped_box = RoundedRectangle(
+            corner_radius=0.15,
+            width=container_width * 0.95,
+            height=mapped_group_text.height + 0.55,
+            color=LINE_COLOR,
+            stroke_width=2,
+            fill_opacity=0.12,
+            fill_color=GRAY_E
+        )
+        mapped_group_text.move_to(mapped_box.get_center())
+        mapped_group_text.align_to(mapped_box.get_left() + RIGHT * 0.2, LEFT)
+        mapped_dlls = VGroup(mapped_box, mapped_group_text)
+
+        # kernel32 callout (не облако, но "мягкий" callout)
+        k32_focus_box = RoundedRectangle(
+            corner_radius=0.28,
+            width=container_width * 0.95,
+            height=1.05,
+            color=LINE_COLOR,
+            stroke_width=2,
+            fill_opacity=0.16,
+            fill_color=GREEN_E
+        )
+        k32_focus_outline = RoundedRectangle(
+            corner_radius=0.30,
+            width=k32_focus_box.width + 0.08,
+            height=k32_focus_box.height + 0.08,
+            color=GREEN_A,
+            stroke_width=2,
+            fill_opacity=0.0
+        )
+        k32_focus_title = Text("kernel32.dll", font_size=18, color=YELLOW_B, weight=BOLD)
+        k32_r1 = Text("VA start: 0x00007FF84B340000", font_size=12, color=TEXT_COLOR)
+        k32_r2 = Text("VA end:   0x00007FF84B402000", font_size=12, color=TEXT_COLOR)
+        k32_note = Text("end = Base(.reloc) + Size", font_size=12, color=GRAY_A)
+
+        k32_focus_text = VGroup(k32_focus_title, k32_r1, k32_r2, k32_note).arrange(
+            DOWN, buff=0.06, aligned_edge=LEFT
+        )
+        k32_focus_text.move_to(k32_focus_box.get_center())
+        k32_focus_text.align_to(k32_focus_box.get_left() + RIGHT * 0.18, LEFT)
+        k32_focus = VGroup(k32_focus_outline, k32_focus_box, k32_focus_text)
+
+        # Paging stacks
+        n_pages = 4
+        page_h = 0.42
+        page_w = 1.05
+
+        def make_stack(header_text):
+            header = Text(header_text, font_size=14, color=WHITE, weight=BOLD)
+            rects = VGroup(*[
+                Rectangle(width=page_w, height=page_h, stroke_color=LINE_COLOR, stroke_width=1, fill_opacity=0.10)
+                for _ in range(n_pages)
+            ]).arrange(DOWN, buff=0.06)
+            nums = VGroup(*[
+                Text(str(i), font_size=12, color=TEXT_COLOR).move_to(rects[i].get_center())
+                for i in range(n_pages)
+            ])
+            for i in range(n_pages):
+                rects[i].add(nums[i])
+            return VGroup(header, rects).arrange(DOWN, buff=0.12)
+
+        va_stack = make_stack("VA pages")
+        pa_stack = make_stack("PA frames")
+        paging_group = VGroup(va_stack, pa_stack).arrange(RIGHT, buff=0.55)
+
+        right_content = VGroup(mapped_dlls, k32_focus, paging_group).arrange(
+            DOWN, buff=0.22, aligned_edge=LEFT
+        )
+        right_content.set_x(right_container.get_center()[0])
+        fit_inside_container(right_content, right_container, pad_x=0.26, pad_y=0.52)
+        right_content.next_to(right_title, DOWN, buff=0.34)
+        right_content.shift(DOWN * 0.05)
+        right_content.set_x(right_container.get_center()[0])
+
+        # VA->PA arrows: make tips a bit larger than before (they were too small)
+        map_idx = [2, 0, 3, 1]
+        arrows_va_pa = VGroup(*[
+            Arrow(
+                right_edge_point_at_y(va_stack[1][i], va_stack[1][i].get_center()[1], outside=0.02),
+                left_edge_point_at_y(pa_stack[1][map_idx[i]], va_stack[1][i].get_center()[1], outside=0.02),
+                buff=0.04,
+                stroke_width=2,
+                max_tip_length_to_length_ratio=0.14  # bigger than before, readable
             )
-            self.wait(0.1)
+            for i in range(n_pages)
+        ])
 
+        # =========================
+        # 7) Связь между стаканами: дуги НЕ перекрывают галочки/крест и с тонкими головками
+        # =========================
+        lib_colors = [BLUE_B, GREEN_B, ORANGE, RED_B]
+        lib_angles = [0.20, 0.08, -0.08, -0.20]
+
+        # Старт стрелок берём НЕ от текста dll_entries (они рядом с галочками),
+        # а от правой границы import_table_rect на уровне каждой строки.
+        starts = []
+        for i in range(4):
+            yy = dll_entries[i].get_center()[1]
+            starts.append(right_edge_point_at_y(import_table_rect, yy, outside=0.04))
+
+        # Цели на границе mapped_dlls (как раньше)
+        targets = []
+        for i in range(4):
+            if i == 0:
+                yy = mapped_list[1].get_center()[1]  # kernel32
+            elif i == 1:
+                yy = mapped_list[2].get_center()[1]  # user32
+            else:
+                yy = mapped_dlls.get_top()[1] - 0.55 - (i * 0.22)
+            targets.append(left_edge_point_at_y(mapped_dlls, yy, outside=0.03))
+
+        trigger_to_mapped = VGroup()
+        for i in range(4):
+            trigger_to_mapped.add(
+                curved_arrow(
+                    starts[i],
+                    targets[i],
+                    angle=lib_angles[i],
+                    color=lib_colors[i],
+                    sw=2.2,
+                    tip_ratio=0.022  # существенно меньше головка
+                )
+            )
+
+        # kernel32 -> callout (тоже из границы прямоугольника, чтобы не задевать галочку)
+        k32_import_to_focus = curved_arrow(
+            right_edge_point_at_y(import_table_rect, dll_entries[0].get_center()[1], outside=0.04),
+            left_edge_point_at_y(k32_focus, dll_entries[0].get_center()[1], outside=0.03),
+            angle=0.10,
+            color=BLUE_B,
+            sw=2.2,
+            tip_ratio=0.022
+        )
+
+        # Двухстрочная подпись, чтобы "влезала" и не улетала вверх
+        trigger_caption = Text(
+            "Импорт → загрузчик ОС мапит DLL\nв адресное пространство процесса",
+            font_size=11,
+            color=GRAY_A
+        )
+
+        # ставим подпись в "коридор" между стаканами и ограничиваем ширину
+        gap_center_x = (left_final.get_right()[0] + right_container.get_left()[0]) / 2
+        trigger_caption.move_to(np.array([gap_center_x, mapped_dlls.get_top()[1] - 0.12, 0]))
+
+        # =========================
+        # 8) Скрин: плавно в центре, 3 секунды, плавно исчезает
+        # =========================
+        screenshot_path = "kernel32_map.png"
+        dbg_img = ImageMobject(screenshot_path)
+        dbg_img.scale_to_fit_width(9.0)
+
+        dbg_frame = RoundedRectangle(
+            corner_radius=0.15,
+            width=dbg_img.width + 0.18,
+            height=dbg_img.height + 0.18,
+            color=LINE_COLOR,
+            stroke_width=2,
+            fill_opacity=0.06
+        )
+        dbg_img.move_to(dbg_frame.get_center())
+        dbg_block = Group(dbg_frame, dbg_img).move_to(ORIGIN)
+
+        # =========================
+        # 9) Показ (замедлено)
+        # =========================
+        self.add(left_final, right_container)
+
+        self.play(FadeIn(right_title, shift=UP * 0.08), run_time=1.2)
         self.wait(0.5)
 
-        # =========================
-        # Этап 5 - ОС и Файловая система (Смещены еще левее)
-        # =========================
+        self.play(FadeIn(mapped_dlls, shift=UP * 0.06), run_time=1.6)
+        self.wait(0.7)
 
-        # 5.1 Блок ОС
-        os_rect = Rectangle(width=1.6, height=0.8, fill_color=RED, fill_opacity=0.4, stroke_color=RED)
-        
-        # Создаем две строки текста
-        os_line1 = Text("ОС", font_size=18, color=WHITE)
-        os_line2 = Text("LoadLibrary()", font_size=14, color=WHITE) # Размер чуть меньше, чтобы влезло
-        
-        # Группируем текст и выравниваем по центру относительно друг друга
-        os_labels = VGroup(os_line1, os_line2).arrange(DOWN, buff=0.05)
-        
-        # Центрируем всю группу текста внутри прямоугольника
-        os_labels.move_to(os_rect.get_center())
-        
-        # Собираем финальную группу и позиционируем её
-        os_group = VGroup(os_rect, os_labels).to_edge(UP, buff=0.8).shift(LEFT * 2)
+        self.play(Create(trigger_to_mapped), FadeIn(trigger_caption), run_time=2.2)
+        self.wait(0.9)
 
-        # 5.2 Блок Файловая система (Упрощенный и точный список)
-        fs_title = Text("Файловая система", font_size=16, color=BLUE_B, weight=BOLD)
-        
-        fs_paths = VGroup(
-            Text("Каталог приложения", font_size=13),
-            Text("C:\\Windows\\System32\\", font_size=13),
-            Text("C:\\Windows\\", font_size=13),
-            Text("Текущий каталог (PWD)", font_size=13),
-            Text("...", font_size=13),
-            Text("PATH = ... ; ... ; ... ;", font_size=13, color=YELLOW_A), 
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
-        
-        fs_group = VGroup(fs_title, fs_paths).arrange(DOWN, buff=0.15, aligned_edge=LEFT)
-        fs_rect = SurroundingRectangle(fs_group, color=BLUE, buff=0.15, fill_opacity=0.1)
-        
-        fs_full = VGroup(fs_rect, fs_group)
-        fs_full.next_to(outer_shape, RIGHT, buff=0.7, aligned_edge=DOWN)
+        # "kernel32 внутри mapped DLLs" -> подсветка, затем вынос callout
+        highlight = SurroundingRectangle(mapped_list[1], color=YELLOW_B, buff=0.08, corner_radius=0.10)
+        self.play(Create(highlight), run_time=1.1)
+        self.wait(0.5)
 
-        self.play(FadeIn(os_group), FadeIn(fs_full))
+        k32_focus_start = k32_focus.copy().scale(0.45).move_to(mapped_list[1].get_center()).set_opacity(0.0)
+        self.add(k32_focus_start)
+        self.play(FadeIn(k32_focus_start, run_time=0.8))
 
-        # =========================
-        # Этап 6 - Обновленная анимация поиска (6 пунктов в ФС)
-        # =========================
-
-        # Формат: (индекс_dll, индекс_пути_фс, найдено, нужно_ли_искать_в_фс)
-        # Индексы ФС: 0-Каталог, 1-System32, 2-System, 3-Windows, 4-Рабочий, 5-PATH
-        search_logic = [
-            (0, 1, True, False),   # kernel32 ->  без анимации перебора
-            (1, 1, True, False),   # user32   -> без анимации перебора
-            (2, 5, True, True),    # libmysql -> Ищем везде и находим в PATH (индекс 5)
-            (3, 5, False, True)    # Qt6Gui   -> Ищем везде (0-5) и не находим
-        ]
-
-        dll_pointer_arrow = VGroup()
-        common_start_point = os_group.get_corner(DL) + RIGHT * 0.2
-
-        for i, (dll_idx, target_fs_idx, is_found, need_fs_search) in enumerate(search_logic):
-            
-            # --- 1. Левая стрелка (ОС -> Таблица импорта) ---
-            target_dll_pos = [import_table_rect.get_center()[0] + 0.3, dll_entries[dll_idx].get_center()[1], 0]
-            dll_corner = [common_start_point[0], target_dll_pos[1], 0]
-            
-            new_dll_arrow = VGroup(
-                Line(common_start_point, dll_corner, color=RED, stroke_width=4),
-                Arrow(dll_corner, target_dll_pos, color=RED, buff=0, tip_length=0.2, stroke_width=4)
-            )
-
-            if i == 0:
-                self.play(Create(new_dll_arrow), run_time=0.7)
-                dll_pointer_arrow = new_dll_arrow
-            else:
-                self.play(Transform(dll_pointer_arrow, new_dll_arrow), run_time=0.7)
-
-            # --- 2. Логика поиска в Файловой Системе ---
-            if need_fs_search:
-                active_search_arrow = VGroup() 
-                
-                # Цикл проходит по всем пунктам до целевого включительно
-                for fs_idx in range(target_fs_idx + 1):
-                    start_p = common_start_point + RIGHT * 0.1 
-                    end_p = fs_paths[fs_idx].get_left()
-                    corner_p = [start_p[0], end_p[1], 0]
-                    
-                    new_step_arrow = VGroup(
-                        Line(start_p, corner_p, color=RED, stroke_width=4),
-                        Arrow(
-                            corner_p, end_p, 
-                            color=RED, 
-                            buff=0, 
-                            stroke_width=6, 
-                            tip_length=0.2 
-                        )
-                    )
-
-                    if fs_idx == 0:
-                        self.play(Create(new_step_arrow), run_time=0.3)
-                        active_search_arrow = new_step_arrow
-                    else:
-                        # Скорость поиска увеличивается для длинных списков
-                        self.play(Transform(active_search_arrow, new_step_arrow), run_time=0.3)
-                    
-                    self.wait(0.05)
-                
-                if is_found:
-                    highlight = SurroundingRectangle(fs_paths[target_fs_idx], color=YELLOW, buff=0.05, stroke_width=3)
-                    self.play(Create(highlight), fs_paths[target_fs_idx].animate.set_color(YELLOW), run_time=0.2)
-                    self.wait(0.3)
-
-            # --- 3. Результат (Галочка или Крестик) ---
-            if is_found:
-                mark = Tex("\\checkmark", color=GREEN).scale(0.7).next_to(dll_entries[dll_idx], RIGHT*0.8, buff=0.2)
-                self.play(Write(mark), run_time=0.3)
-                
-                if need_fs_search:
-                    self.play(
-                        FadeOut(active_search_arrow),
-                        FadeOut(highlight),
-                        fs_paths[target_fs_idx].animate.set_color(WHITE),
-                        run_time=0.4
-                    )
-            else:
-                mark = Text("×", color=RED).scale(1).next_to(dll_entries[dll_idx], RIGHT*0.8, buff=0.2)
-                self.play(Write(mark), run_time=0.3)
-                if need_fs_search:
-                    self.play(FadeOut(active_search_arrow), run_time=0.4)
-
-        # --- 4. Финал сценария (Исправленное появление ошибки) ---
-        self.wait(0.8)
-        
-        # 1. Убираем стрелку
-        self.play(FadeOut(dll_pointer_arrow), run_time=0.3)
-        
-        # 2. Создаем объект ошибки (явно определяем финальный вид)
-        try:
-            # Пытаемся загрузить картинку
-            error_obj = ImageMobject("error_image.png")
-            error_obj.height = 3.5 
-        except:
-            # Если картинки нет, создаем текст
-            t = Text("STATUS_DLL_NOT_FOUND", font="Monospace", color=RED, weight=BOLD).scale(0.8)
-            r = SurroundingRectangle(t, color=RED, buff=0.2)
-            error_obj = VGroup(r, t) # Используем VGroup для текста
-
-        # Находим позицию последнего крестика. 
-        # Если переменная mark потерялась, берем позицию справа от последней DLL
-        last_mark_pos = dll_entries[-1].get_right() + RIGHT * 0.5
-
-        # 3. Устанавливаем начальное состояние
-        error_obj.move_to(last_mark_pos)
-        error_obj.scale(0.01) # Уменьшаем в точку
-        
-        # Добавляем на сцену перед анимацией
-        self.add(error_obj)
-
-        # 4. Анимация "вылета"
         self.play(
-            error_obj.animate.move_to(ORIGIN).scale(80), # 0.01 * 100 = 1 (исходный размер)
-            run_time=1.5,
-            rate_func=lambda t: 1 - 2**(-5 * t) if t > 0 else 0
+            k32_focus_start.animate.set_opacity(1.0).scale(2.22).move_to(k32_focus.get_center()),
+            FadeOut(highlight),
+            run_time=2.2
         )
+        self.remove(k32_focus_start)
+        self.add(k32_focus)
 
-        self.wait(3)
+        self.play(Create(k32_import_to_focus), run_time=1.6)
+        self.wait(0.6)
+
+        self.play(FadeIn(paging_group, shift=UP * 0.05), run_time=1.6)
+        self.play(Create(arrows_va_pa), run_time=2.0)
+        self.wait(1.0)
+
+        self.play(FadeIn(dbg_block), run_time=2.5)
+        self.wait(3.0)
+        self.play(FadeOut(dbg_block), run_time=2.5)
+
+        self.wait(2.0)

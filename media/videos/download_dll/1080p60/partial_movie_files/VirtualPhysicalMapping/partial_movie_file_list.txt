@@ -1,0 +1,12 @@
+# This file is used internally by FFMPEG.
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2257293077_3016316490_1870760942.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_1839128356_756315350.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_2008509246_846138188.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_3750511224_198381786.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_2523542750_67075037.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_2984757200_462521.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_2563987152_1272961073.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_3717122429_281819325.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_1734327179_139940060.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_2045622444_1165954682.mp4'
+file 'file:/home/kali/Desktop/revers_avtomat/media/videos/download_dll/1080p60/partial_movie_files/VirtualPhysicalMapping/2135761390_2408024828_1051456005.mp4'
