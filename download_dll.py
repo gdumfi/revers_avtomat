@@ -45,20 +45,22 @@ class VirtualMemoryScheme(Scene):
                 content.scale_to_fit_height(avail_h)
             return content
 
-        def small_tip(curve_or_arrow, ratio=0.03):
-            # Manim allows attribute; keep very small.
-            curve_or_arrow.max_tip_length_to_length_ratio = ratio
-            return curve_or_arrow
+        def set_tip_height(arrow_mob: Mobject, h: float):
+            """
+            Fixes arrow head size to an absolute height (in manim units),
+            removing dependence on arrow length.
+            """
+            try:
+                tip = arrow_mob.get_tip()
+            except Exception:
+                tip = getattr(arrow_mob, "tip", None)
+            if tip is not None:
+                tip.scale_to_fit_height(h)
 
-        def curved_arrow(start, end, angle, color, sw=2.4, tip_ratio=0.028):
-            a = CurvedArrow(
-                start,
-                end,
-                angle=angle,
-                color=color,
-                stroke_width=sw,
-            )
-            small_tip(a, tip_ratio)
+        def curved_arrow(start, end, angle, color, sw=2.0, tip_h=0.16):
+            a = CurvedArrow(start, end, angle=angle, color=color, stroke_width=sw)
+            # Force an absolute tip height (fixes "huge heads" and mismatch)
+            set_tip_height(a, tip_h)
             return a
 
         # =========================
@@ -98,6 +100,7 @@ class VirtualMemoryScheme(Scene):
 
         left_line = Line(bottom_wave.get_start(), top_wave.get_start(), color=LINE_COLOR)
         right_line = Line(bottom_wave.get_end(), top_wave.get_end(), color=LINE_COLOR)
+
         outer_shape = VGroup(top_wave, bottom_wave, left_line, right_line)
 
         # Заголовок
@@ -209,7 +212,7 @@ class VirtualMemoryScheme(Scene):
         ).arrange(DOWN, aligned_edge=RIGHT, buff=0.1)
         zero_bytes.move_to(rdata.get_bottom()).shift(UP * 0.3)
 
-        # отметки (ВАЖНО: не перекрывать стрелками)
+        # отметки
         marks = VGroup(
             Tex("\\checkmark", color=GREEN).scale(0.7).next_to(dll_entries[0], RIGHT * 0.8, buff=0.2),
             Tex("\\checkmark", color=GREEN).scale(0.7).next_to(dll_entries[1], RIGHT * 0.8, buff=0.2),
@@ -239,8 +242,6 @@ class VirtualMemoryScheme(Scene):
         # =========================
         right_container = outer_shape.copy().to_edge(RIGHT, buff=1.1)
 
-        # IMPORTANT: в правом стакане "где-то в физ. памяти" — это про размещение/кадры,
-        # а VA pages остаются виртуальными и лишь отображаются на кадры физической памяти.
         right_title = Text(
             "где-то в физ. памяти",
             font_size=20,
@@ -272,7 +273,7 @@ class VirtualMemoryScheme(Scene):
         mapped_group_text.align_to(mapped_box.get_left() + RIGHT * 0.2, LEFT)
         mapped_dlls = VGroup(mapped_box, mapped_group_text)
 
-        # kernel32 callout (не облако, но "мягкий" callout)
+        # kernel32 callout
         k32_focus_box = RoundedRectangle(
             corner_radius=0.28,
             width=container_width * 0.95,
@@ -293,7 +294,7 @@ class VirtualMemoryScheme(Scene):
         k32_focus_title = Text("kernel32.dll", font_size=18, color=YELLOW_B, weight=BOLD)
         k32_r1 = Text("VA start: 0x00007FF84B340000", font_size=12, color=TEXT_COLOR)
         k32_r2 = Text("VA end:   0x00007FF84B402000", font_size=12, color=TEXT_COLOR)
-        k32_note = Text("end = Base(.reloc) + Size", font_size=12, color=GRAY_A)
+        k32_note = Text("end = Base(.reloc) + Size", font_size=10, color=GRAY_A)
 
         k32_focus_text = VGroup(k32_focus_title, k32_r1, k32_r2, k32_note).arrange(
             DOWN, buff=0.06, aligned_edge=LEFT
@@ -334,33 +335,31 @@ class VirtualMemoryScheme(Scene):
         right_content.shift(DOWN * 0.05)
         right_content.set_x(right_container.get_center()[0])
 
-        # VA->PA arrows: make tips a bit larger than before (they were too small)
+        # VA->PA arrows: ABSOLUTE SAME TIP SIZE
         map_idx = [2, 0, 3, 1]
-        arrows_va_pa = VGroup(*[
-            Arrow(
+        arrows_va_pa = VGroup()
+        for i in range(n_pages):
+            a = Arrow(
                 right_edge_point_at_y(va_stack[1][i], va_stack[1][i].get_center()[1], outside=0.02),
                 left_edge_point_at_y(pa_stack[1][map_idx[i]], va_stack[1][i].get_center()[1], outside=0.02),
                 buff=0.04,
-                stroke_width=2,
-                max_tip_length_to_length_ratio=0.14  # bigger than before, readable
+                stroke_width=2.2,
             )
-            for i in range(n_pages)
-        ])
+            # Force equal tip height for each VA->PA arrow
+            set_tip_height(a, 0.12)
+            arrows_va_pa.add(a)
 
         # =========================
-        # 7) Связь между стаканами: дуги НЕ перекрывают галочки/крест и с тонкими головками
+        # 7) Связь между стаканами: tips ABSOLUTE SAME SIZE (small)
         # =========================
         lib_colors = [BLUE_B, GREEN_B, ORANGE, RED_B]
-        lib_angles = [0.20, 0.08, -0.08, -0.20]
+        lib_angles = [0.18, 0.06, -0.06, -0.18]
 
-        # Старт стрелок берём НЕ от текста dll_entries (они рядом с галочками),
-        # а от правой границы import_table_rect на уровне каждой строки.
         starts = []
         for i in range(4):
             yy = dll_entries[i].get_center()[1]
-            starts.append(right_edge_point_at_y(import_table_rect, yy, outside=0.04))
+            starts.append(right_edge_point_at_y(import_table_rect, yy, outside=0.05))
 
-        # Цели на границе mapped_dlls (как раньше)
         targets = []
         for i in range(4):
             if i == 0:
@@ -379,29 +378,25 @@ class VirtualMemoryScheme(Scene):
                     targets[i],
                     angle=lib_angles[i],
                     color=lib_colors[i],
-                    sw=2.2,
-                    tip_ratio=0.022  # существенно меньше головка
+                    sw=2.0,
+                    tip_h=0.14  # FIXED SMALL TIP (no more huge heads)
                 )
             )
 
-        # kernel32 -> callout (тоже из границы прямоугольника, чтобы не задевать галочку)
         k32_import_to_focus = curved_arrow(
-            right_edge_point_at_y(import_table_rect, dll_entries[0].get_center()[1], outside=0.04),
+            right_edge_point_at_y(import_table_rect, dll_entries[0].get_center()[1], outside=0.05),
             left_edge_point_at_y(k32_focus, dll_entries[0].get_center()[1], outside=0.03),
             angle=0.10,
             color=BLUE_B,
-            sw=2.2,
-            tip_ratio=0.022
+            sw=2.0,
+            tip_h=0.12
         )
 
-        # Двухстрочная подпись, чтобы "влезала" и не улетала вверх
         trigger_caption = Text(
             "Импорт → загрузчик ОС мапит DLL\nв адресное пространство процесса",
             font_size=11,
             color=GRAY_A
         )
-
-        # ставим подпись в "коридор" между стаканами и ограничиваем ширину
         gap_center_x = (left_final.get_right()[0] + right_container.get_left()[0]) / 2
         trigger_caption.move_to(np.array([gap_center_x, mapped_dlls.get_top()[1] - 0.12, 0]))
 
@@ -437,7 +432,6 @@ class VirtualMemoryScheme(Scene):
         self.play(Create(trigger_to_mapped), FadeIn(trigger_caption), run_time=2.2)
         self.wait(0.9)
 
-        # "kernel32 внутри mapped DLLs" -> подсветка, затем вынос callout
         highlight = SurroundingRectangle(mapped_list[1], color=YELLOW_B, buff=0.08, corner_radius=0.10)
         self.play(Create(highlight), run_time=1.1)
         self.wait(0.5)
