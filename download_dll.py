@@ -342,14 +342,29 @@ class VirtualMemoryScheme(Scene):
         dbg_img.move_to(dbg_frame.get_center())
         kernel32_highlight = Rectangle(width=4.9881, height=0.6116, color=RED, stroke_width=3)
         kernel32_highlight.move_to(dbg_img.get_center() + np.array([0, 0.1158, 0]))
-        dbg_block = Group(dbg_frame, dbg_img, kernel32_highlight).move_to(np.array([gap_center_x + 1.5, mapped_kernel32_group.get_center()[1] - 1.5, 0]))
+        dbg_block = Group(dbg_frame, dbg_img, kernel32_highlight)
+        y_shift = mapped_kernel32_group.get_center()[1] - kernel32_highlight.get_center()[1]
+        dbg_block.shift(UP * y_shift)
+        dbg_block.set_x(gap_center_x + 0.7)
+        
         dbg_text = Text("Реальный диапазон загрузки в памяти", font_size=16, color=YELLOW_B).next_to(dbg_block, UP, buff=0.2)
         dbg_group = Group(dbg_block, dbg_text)
         
         kernel32_left_highlight = SurroundingRectangle(mapped_kernel32_rect, color=RED, buff=0, stroke_width=3)
+        
+        fill_poly = Polygon(
+            kernel32_left_highlight.get_corner(UR),
+            kernel32_highlight.get_corner(UL),
+            kernel32_highlight.get_corner(DL),
+            kernel32_left_highlight.get_corner(DR),
+            color=RED,
+            fill_opacity=0.2,
+            stroke_width=0
+        )
+        
         line_top = Line(kernel32_left_highlight.get_corner(UR), kernel32_highlight.get_corner(UL), color=RED, stroke_width=2)
         line_bot = Line(kernel32_left_highlight.get_corner(DR), kernel32_highlight.get_corner(DL), color=RED, stroke_width=2)
-        dbg_group.add(kernel32_left_highlight, line_top, line_bot)
+        dbg_group.add(kernel32_left_highlight, fill_poly, line_top, line_bot)
 
         # =========================
         # 10) Анимация
