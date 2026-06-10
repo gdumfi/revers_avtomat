@@ -340,7 +340,9 @@ class VirtualMemoryScheme(Scene):
         dbg_img = ImageMobject(screenshot_path).scale_to_fit_width(5.0)
         dbg_frame = RoundedRectangle(corner_radius=0.15, width=dbg_img.width + 0.18, height=dbg_img.height + 0.18, color=LINE_COLOR, stroke_width=2, fill_opacity=0.06)
         dbg_img.move_to(dbg_frame.get_center())
-        dbg_block = Group(dbg_frame, dbg_img).move_to(np.array([gap_center_x, mapped_kernel32_group.get_center()[1] - 1.5, 0]))
+        kernel32_highlight = Rectangle(width=4.9881, height=0.6116, color=RED, stroke_width=3)
+        kernel32_highlight.move_to(dbg_img.get_center() + np.array([0, 0.1158, 0]))
+        dbg_block = Group(dbg_frame, dbg_img, kernel32_highlight).move_to(np.array([gap_center_x, mapped_kernel32_group.get_center()[1] - 1.5, 0]))
         dbg_text = Text("Реальный диапазон загрузки в памяти", font_size=16, color=YELLOW_B).next_to(dbg_block, UP, buff=0.2)
         dbg_group = Group(dbg_block, dbg_text)
 
